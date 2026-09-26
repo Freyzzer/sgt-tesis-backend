@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Elementos de la solución/">
     <File Path="Directory.Build.props" />
+    <File Path="Readme.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/SGT.Tesis.API/SGT.Tesis.API.csproj" />
