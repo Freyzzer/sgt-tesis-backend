@@ -1,4 +1,6 @@
 # SGT-Tesis — Backend
+Reglas de trabajo del equipo en [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 
 Sistema de Gestión de Tesis (SGT-Tesis) para seguimiento institucional de procesos de investigación y grado. Este repositorio contiene el **backend** del sistema, construido en .NET 10 siguiendo Clean Architecture.
 
@@ -56,7 +58,7 @@ API  →  Infrastructure  →  Application  →  Domain
 - **Infrastructure**: implementación técnica — EF Core, autenticación, almacenamiento de archivos, envío de correos.
 - **API**: controllers, middlewares, configuración de arranque (`Program.cs`).
 
-Documentación ampliada de decisiones de arquitectura en [`docs/backend-architecture.md`](docs/backend-architecture.md).
+Documentación ampliada de decisiones de arquitectura en [`docs/SDD_SPECIFICATION.md`](docs/SDD_SPECIFICATION.md#7-arquitectura).
 
 ## Requisitos previos
 
@@ -73,8 +75,8 @@ Documentación ampliada de decisiones de arquitectura en [`docs/backend-architec
 
 1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/<tu-organizacion>/sgt-tesis-backend.git
-   cd sgt-tesis-backend
+   git clone https://github.com/CSA-DanielVillamizar/sgt-tesis.git
+   cd sgt-tesis
    ```
 
 2. Restaurar dependencias:
@@ -126,7 +128,7 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "tu-cadena-local" 
 ## Estructura del proyecto
 
 ```
-sgt-tesis-backend/
+sgt-tesis/
 ├── src/
 │   ├── SGT.Tesis.Domain/          # Entidades, enums, reglas de negocio
 │   ├── SGT.Tesis.Application/     # Casos de uso (CQRS con MediatR)
@@ -136,10 +138,10 @@ sgt-tesis-backend/
 │   ├── SGT.Tesis.UnitTests/
 │   └── SGT.Tesis.IntegrationTests/
 ├── docs/                          # Documentación técnica y de arquitectura
-└── docker-compose.yml
+└── docker-compose.yml             # (pendiente, Sprint 8)
 ```
 
-Detalle completo de carpetas internas por proyecto en [`docs/backend-architecture.md`](docs/backend-architecture.md).
+Detalle completo de carpetas internas por proyecto en [`docs/SDD_SPECIFICATION.md`](docs/SDD_SPECIFICATION.md#7-arquitectura).
 
 ## Roles del sistema
 
@@ -209,7 +211,7 @@ Todo Pull Request hacia `develop` o `main` requiere al menos una revisión aprob
 
 ## Roadmap / Sprints
 
-La planificación completa por sprints, con tareas y criterios de aceptación, está en [`docs/sprints.md`](docs/sprints.md).
+La planificación completa por sprints, con tareas y criterios de aceptación, está en [`docs/SDD_SPECIFICATION.md`](docs/SDD_SPECIFICATION.md#10-plan-por-sprints-propuesto).
 
 ## Contribución
 
