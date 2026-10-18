@@ -1,4 +1,4 @@
-﻿namespace SGT.Tesis.IntegrationTests;
+namespace SGT.Tesis.IntegrationTests;
 
 public class UnitTest1
 {

@@ -1,4 +1,4 @@
-﻿namespace SGT.Tesis.UnitTests;
+namespace SGT.Tesis.UnitTests;
 
 public class UnitTest1
 {
