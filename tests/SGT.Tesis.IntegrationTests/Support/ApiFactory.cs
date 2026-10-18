@@ -29,6 +29,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 
+    /// <summary>Carpeta temporal de archivos de esta instancia; se elimina al liberar la fábrica.</summary>
+    public string RutaAlmacen { get; } = Path.Combine(Path.GetTempPath(), "sgt-tesis-pruebas", Guid.NewGuid().ToString("N"));
+
     public FakeClock Reloj { get; } = new();
 
     public Dictionary<string, string?> Configuracion { get; } = new()
@@ -39,6 +42,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         ["Jwt:SigningKey"] = "clave-de-pruebas-que-supera-los-32-bytes-0123456789",
         ["RateLimit:LoginPermitPerMinute"] = "1000",
         ["Cors:AllowedOrigins:0"] = "http://frontend.test",
+        ["Documentos:MaxBytes"] = "1048576",
         ["Bootstrap:AdminCorreo"] = AdminCorreo,
         ["Bootstrap:AdminPassword"] = AdminPassword,
     };
@@ -46,6 +50,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        Configuracion["Storage:RootPath"] = RutaAlmacen;
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(Configuracion));
 
         builder.ConfigureServices(services =>
@@ -71,5 +76,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     {
         base.Dispose(disposing);
         _connection.Dispose();
+
+        if (Directory.Exists(RutaAlmacen))
+        {
+            Directory.Delete(RutaAlmacen, recursive: true);
+        }
     }
 }

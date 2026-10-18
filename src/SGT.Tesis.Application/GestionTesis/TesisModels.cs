@@ -42,6 +42,8 @@ public interface ITesisRepository
 
     Task<TesisGrado?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken);
 
+    Task<TesisGrado?> ObtenerPorEtapaAsync(Guid etapaId, CancellationToken cancellationToken);
+
     Task<bool> ExisteActivaAsync(Guid studentId, CancellationToken cancellationToken);
 
     void Agregar(TesisGrado tesis);

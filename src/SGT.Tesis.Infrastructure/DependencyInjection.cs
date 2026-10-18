@@ -3,7 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Documentos;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Infrastructure.Documentos;
 using SGT.Tesis.Infrastructure.Identity;
 using SGT.Tesis.Infrastructure.Persistence;
 using SGT.Tesis.Infrastructure.Persistence.Repositories;
@@ -53,7 +55,15 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ITesisRepository, TesisRepository>();
-        services.AddScoped<IRequisitosDocumentales, SinRequisitosDocumentales>();
+        services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();
+        services.AddOptions<DocumentosOptions>().Bind(configuration.GetSection(DocumentosOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<StorageOptions>, StorageOptionsValidator>();
+        services.AddOptions<StorageOptions>().Bind(configuration.GetSection(StorageOptions.SectionName)).ValidateOnStart();
+
+        services.AddSingleton<IDocumentosPolicy, DocumentosPolicy>();
+        services.AddSingleton<IFileStorage, LocalFileStorage>();
+        services.AddScoped<IDocumentoRepository, DocumentoRepository>();
+        services.AddScoped<IRequisitosDocumentales, RequisitosDocumentalesConfigurables>();
 
         services.AddHostedService<AdminBootstrapService>();
 

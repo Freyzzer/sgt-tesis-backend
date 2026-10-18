@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<TesisGrado> Tesis => Set<TesisGrado>();
 
+    public DbSet<Documento> Documentos => Set<Documento>();
+
     public DbSet<Usuario> Usuarios => Set<Usuario>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

@@ -27,3 +27,10 @@ public sealed class EtapaIncompletaException(IReadOnlyList<string> faltantes)
 {
     public IReadOnlyList<string> Faltantes { get; } = faltantes;
 }
+
+/// <summary>El archivo supera el tamaño máximo permitido (413).</summary>
+public sealed class ArchivoDemasiadoGrandeException(long maximoBytes)
+    : AppException($"El archivo supera el tamaño máximo permitido de {maximoBytes / (1024 * 1024)} MB.");
+
+/// <summary>El tipo real del archivo no está permitido (415).</summary>
+public sealed class TipoArchivoNoPermitidoException(string message) : AppException(message);

@@ -57,6 +57,8 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         ProhibidoException e => Crear(StatusCodes.Status403Forbidden, "Acceso denegado.", e.Message),
         NoEncontradoException e => Crear(StatusCodes.Status404NotFound, "Recurso no encontrado.", e.Message),
         ConflictoException e => Crear(StatusCodes.Status409Conflict, "Conflicto con el estado actual.", e.Message),
+        ArchivoDemasiadoGrandeException e => Crear(StatusCodes.Status413PayloadTooLarge, "Archivo demasiado grande.", e.Message),
+        TipoArchivoNoPermitidoException e => Crear(StatusCodes.Status415UnsupportedMediaType, "Tipo de archivo no permitido.", e.Message),
         EtapaIncompletaException e => ConFaltantes(e),
         TransicionInvalidaException e => Crear(StatusCodes.Status409Conflict, "Operación no válida para el estado actual.", e.Message),
         DomainException e => Crear(StatusCodes.Status422UnprocessableEntity, "Regla de negocio incumplida.", e.Message),

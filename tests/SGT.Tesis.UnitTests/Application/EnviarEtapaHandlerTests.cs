@@ -26,6 +26,9 @@ public class EnviarEtapaHandlerTests
         public Task<TesisGrado?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken) =>
             Task.FromResult<TesisGrado?>(tesis.Id == id ? tesis : null);
 
+        public Task<TesisGrado?> ObtenerPorEtapaAsync(Guid etapaId, CancellationToken cancellationToken) =>
+            Task.FromResult<TesisGrado?>(tesis.Etapas.Any(e => e.Id == etapaId) ? tesis : null);
+
         public Task<bool> ExisteActivaAsync(Guid studentId, CancellationToken cancellationToken) =>
             Task.FromResult(tesis.StudentId == studentId);
 

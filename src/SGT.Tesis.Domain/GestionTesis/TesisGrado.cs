@@ -49,6 +49,23 @@ public sealed class TesisGrado : BaseEntity
         _etapas.FirstOrDefault(e => e.Tipo == tipo)
         ?? throw new TransicionInvalidaException($"La etapa {tipo} aún no está abierta para esta tesis.");
 
+    /// <summary>Valida que la etapa exista y admita nuevos documentos (INV-7).</summary>
+    public Etapa ExigirEtapaEditable(EtapaTipo tipo)
+    {
+        var etapa = ObtenerEtapa(tipo);
+
+        if (!etapa.AdmiteDocumentos)
+        {
+            throw new TransicionInvalidaException(etapa.Estado switch
+            {
+                EstadoEtapa.EnRevision => "La etapa está en revisión y no admite cambios de documentos.",
+                _ => $"La etapa está {etapa.Estado} y no admite documentos.",
+            });
+        }
+
+        return etapa;
+    }
+
     /// <summary>Envía a revisión la etapa indicada, que debe ser la actual y estar Pendiente u Observada.</summary>
     public Etapa EnviarEtapaARevision(EtapaTipo tipo)
     {

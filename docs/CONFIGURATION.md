@@ -16,6 +16,9 @@ Las claves se leen de `appsettings.json`, `appsettings.<Ambiente>.json` y variab
 | `Jwt:RefreshTokenDays` | `Jwt__RefreshTokenDays` | No (7) | Entre 1 y 30. |
 | `Bootstrap:AdminCorreo` / `Bootstrap:AdminPassword` | `Bootstrap__AdminCorreo` / `Bootstrap__AdminPassword` | Solo el primer arranque | Crea el primer Administrador si no existe ninguno. **Retirar las variables después.** |
 | `RateLimit:LoginPermitPerMinute` | `RateLimit__LoginPermitPerMinute` | No (10) | Solicitudes por minuto e IP a login y refresh. |
+| `Storage:RootPath` | `Storage__RootPath` | Todos | Carpeta de los archivos cargados. Fuera del repositorio, con volumen persistente y respaldo en Staging/Producción. La app no arranca sin ella. |
+| `Documentos:MaxBytes` | `Documentos__MaxBytes` | No (20 MB) | Tamaño máximo por archivo; entre 1 KB y 100 MB. |
+| `Documentos:Requisitos:<Etapa>:<n>` | `Documentos__Requisitos__Estudiante__0` | No | Categorías obligatorias para enviar la etapa (p. ej. `Propuesta firmada`). Vacío hasta que el Product Owner las defina. `<Etapa>`: Estudiante, Propuesta, Consejo, Evaluacion, Pasantia, Articulo o RequisitosFinales. |
 | `Serilog:*` | `Serilog__MinimumLevel__Default` | No | Nivel y destinos de log (consola por defecto). |
 
 ## Comportamiento transversal de la API
@@ -49,3 +52,12 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - Política de contraseña: mínimo 12 caracteres con mayúscula, minúscula, número y símbolo.
 - Correo único (sin distinguir mayúsculas). No se puede desactivar ni cambiar el rol del propio usuario, ni dejar al sistema sin Administrador activo.
 - Desactivar un usuario revoca sus refresh tokens y, además, el estado y el rol se verifican en cada petición: un access token vigente de una cuenta desactivada o con rol cambiado deja de valer de inmediato.
+
+## Documentos
+
+- `POST /api/v1/tesis/{id}/etapas/{1-7}/documentos` (multipart: `categoria` y `archivo`), `GET` de la misma ruta para listar y `GET /api/v1/documentos/{id}/contenido` para descargar.
+- Solo PDF y DOCX, verificados por el **contenido** (firma; un DOCX debe ser un paquete Office real) y por la extensión. Otros tipos responden 415; el exceso de tamaño, 413.
+- El archivo se guarda con nombre GUID (nunca el original), con hash SHA-256 en la base de datos. Subir de nuevo la misma categoría crea una versión nueva y conserva las anteriores.
+- Solo se admiten documentos mientras la etapa está Pendiente u Observada (en revisión, aprobada o rechazada → 409).
+- Descarga con `Content-Disposition: attachment` y `X-Content-Type-Options: nosniff`; la ven el dueño y el Administrador (los evaluadores asignados, con US-09).
+- No hay antivirus; si la institución lo exige, se integra detrás de `IFileStorage` antes de guardar.

@@ -22,6 +22,9 @@ public sealed class Etapa : BaseEntity
     /// <summary>Una etapa está abierta mientras no haya sido aprobada ni rechazada.</summary>
     public bool EstaAbierta => Estado is EstadoEtapa.Pendiente or EstadoEtapa.EnRevision or EstadoEtapa.Observado;
 
+    /// <summary>Solo se pueden cargar documentos mientras la etapa está Pendiente u Observada.</summary>
+    public bool AdmiteDocumentos => Estado is EstadoEtapa.Pendiente or EstadoEtapa.Observado;
+
     internal static Etapa Abrir(Guid tesisId, EtapaTipo tipo, DateTime utcNow) => new()
     {
         TesisId = tesisId,
