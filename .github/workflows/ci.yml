@@ -34,7 +34,7 @@ jobs:
         run: dotnet build SGT.Tesis.slnx --no-restore -c Release
 
       - name: Test
-        run: dotnet test SGT.Tesis.slnx --no-build -c Release --collect:"XPlat Code Coverage" --results-directory ./TestResults
+        run: dotnet test --solution SGT.Tesis.slnx --no-build -c Release --coverage --coverage-output-format cobertura --results-directory ./TestResults
 
       - name: Vulnerable packages
         shell: bash
@@ -49,4 +49,4 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: TestResults/**/coverage.cobertura.xml
+          path: TestResults/**/*.cobertura.xml

@@ -10,6 +10,7 @@
     <Project Path="src/SGT.Tesis.Infrastructure/SGT.Tesis.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/SGT.Tesis.ArchitectureTests/SGT.Tesis.ArchitectureTests.csproj" />
     <Project Path="tests/SGT.Tesis.IntegrationTests/SGT.Tesis.IntegrationTests.csproj" />
     <Project Path="tests/SGT.Tesis.UnitTests/SGT.Tesis.UnitTests.csproj" />
   </Folder>

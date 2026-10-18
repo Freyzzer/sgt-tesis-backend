@@ -20,7 +20,7 @@ public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
     [Trait("Issue", "23")]
     public async Task Health_live_responde_200()
     {
-        var response = await _client.GetAsync("/health/live");
+        var response = await _client.GetAsync("/health/live", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -29,7 +29,7 @@ public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
     [Trait("Issue", "23")]
     public async Task Toda_respuesta_incluye_cabeceras_de_seguridad()
     {
-        var response = await _client.GetAsync("/health/live");
+        var response = await _client.GetAsync("/health/live", TestContext.Current.CancellationToken);
 
         Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
         Assert.Equal("DENY", response.Headers.GetValues("X-Frame-Options").Single());
@@ -41,7 +41,7 @@ public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
     [Trait("Issue", "23")]
     public async Task Ruta_inexistente_devuelve_problem_details()
     {
-        var response = await _client.GetAsync("/no-existe");
+        var response = await _client.GetAsync("/no-existe", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
@@ -54,7 +54,7 @@ public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
         var request = new HttpRequestMessage(HttpMethod.Get, "/health/live");
         request.Headers.Add("Origin", AllowedOrigin);
 
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.Equal(AllowedOrigin, response.Headers.GetValues("Access-Control-Allow-Origin").Single());
     }
@@ -66,7 +66,7 @@ public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
         var request = new HttpRequestMessage(HttpMethod.Get, "/health/live");
         request.Headers.Add("Origin", "http://sitio-malicioso.test");
 
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
     }

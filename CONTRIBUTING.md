@@ -66,7 +66,7 @@ Ver `docs/git-workflow.pdf`. Resumen:
 ```bash
 dotnet restore
 dotnet build
-dotnet test --collect:"XPlat Code Coverage"
+dotnet test --solution SGT.Tesis.slnx --coverage --coverage-output-format cobertura
 dotnet format --verify-no-changes
 dotnet list package --vulnerable --include-transitive
 ```

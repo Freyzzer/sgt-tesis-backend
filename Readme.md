@@ -174,8 +174,8 @@ dotnet ef migrations add NombreDeLaMigracion --project src/SGT.Tesis.Infrastruct
 # Aplicar migraciones pendientes
 dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-project src/SGT.Tesis.API
 
-# Ejecutar todas las pruebas
-dotnet test
+# Ejecutar todas las pruebas (Microsoft Testing Platform, ver global.json)
+dotnet test --solution SGT.Tesis.slnx
 
 # Levantar contenedores (API + base de datos) con Docker Compose
 docker-compose up -d
@@ -187,8 +187,8 @@ docker-compose up -d
 - **Pruebas de integración** (`SGT.Tesis.IntegrationTests`): endpoints de la API contra una base de datos de prueba.
 
 ```bash
-dotnet test --filter "FullyQualifiedName~UnitTests"
-dotnet test --filter "FullyQualifiedName~IntegrationTests"
+dotnet test --project tests/SGT.Tesis.UnitTests
+dotnet test --project tests/SGT.Tesis.IntegrationTests
 ```
 
 ## Convenciones de Git
