@@ -1,17 +1,17 @@
 using System.Net;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+
+using SGT.Tesis.IntegrationTests.Support;
 
 namespace SGT.Tesis.IntegrationTests.Api;
 
-public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
+public class ApiPipelineTests : IClassFixture<ApiFactory>
 {
     private const string AllowedOrigin = "http://frontend.test";
 
     private readonly HttpClient _client;
 
-    public ApiPipelineTests(TestFactory factory) => _client = factory.CreateClient(new WebApplicationFactoryClientOptions
+    public ApiPipelineTests(ApiFactory factory) => _client = factory.CreateClient(new WebApplicationFactoryClientOptions
     {
         AllowAutoRedirect = false,
     });
@@ -69,18 +69,5 @@ public class ApiPipelineTests : IClassFixture<ApiPipelineTests.TestFactory>
         var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
-    }
-
-    public sealed class TestFactory : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:DefaultConnection"] = "Server=(none);Database=pruebas;User ID=sgt_app_test;Password=marcador",
-                ["Cors:AllowedOrigins:0"] = AllowedOrigin,
-            }));
-        }
     }
 }

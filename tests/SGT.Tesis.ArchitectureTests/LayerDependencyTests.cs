@@ -18,7 +18,7 @@ public class LayerDependencyTests
 
     private static readonly System.Reflection.Assembly Domain = typeof(BaseEntity).Assembly;
     private static readonly System.Reflection.Assembly Application = typeof(ApplicationAssemblyMarker).Assembly;
-    private static readonly System.Reflection.Assembly Infrastructure = typeof(DependencyInjection).Assembly;
+    private static readonly System.Reflection.Assembly Infrastructure = typeof(SGT.Tesis.Infrastructure.DependencyInjection).Assembly;
     private static readonly System.Reflection.Assembly Api = typeof(GlobalExceptionHandler).Assembly;
 
     private static void AssertNoDependencies(System.Reflection.Assembly assembly, params string[] forbidden)

@@ -2,7 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Infrastructure.Identity;
 using SGT.Tesis.Infrastructure.Persistence;
+using SGT.Tesis.Infrastructure.Persistence.Repositories;
 
 namespace SGT.Tesis.Infrastructure;
 
@@ -18,6 +21,15 @@ public static class DependencyInjection
                 configuration.GetConnectionString(DatabaseOptions.ConnectionStringName) ?? string.Empty)
             .ValidateOnStart();
 
+        services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateOnStart();
+
+        services.AddOptions<BootstrapOptions>().Bind(configuration.GetSection(BootstrapOptions.SectionName));
+
+        services.AddScoped<AuditoriaInterceptor>();
+
         services.AddDbContext<AppDbContext>((provider, builder) =>
         {
             var db = provider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
@@ -30,7 +42,17 @@ public static class DependencyInjection
                     TimeSpan.FromSeconds(db.MaxRetryDelaySeconds),
                     errorNumbersToAdd: null);
             });
+            builder.AddInterceptors(provider.GetRequiredService<AuditoriaInterceptor>());
         });
+
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IPasswordHasher, PasswordHasherService>();
+        services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+        services.AddHostedService<AdminBootstrapService>();
 
         return services;
     }

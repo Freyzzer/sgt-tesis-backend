@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.Common;
 
 namespace SGT.Tesis.API.Middleware;
@@ -15,27 +16,12 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Exception exception,
         CancellationToken cancellationToken)
     {
-        var problem = exception switch
-        {
-            DomainException domain => new ProblemDetails
-            {
-                Status = StatusCodes.Status422UnprocessableEntity,
-                Title = "Regla de negocio incumplida.",
-                Detail = domain.Message,
-            },
-            OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested => null,
-            _ => new ProblemDetails
-            {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "Ocurrió un error inesperado.",
-                Detail = "Si el problema persiste, comuníquelo indicando el identificador de la solicitud.",
-            },
-        };
-
-        if (problem is null)
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
         {
             return true;
         }
+
+        var problem = Mapear(exception);
 
         if (problem.Status == StatusCodes.Status500InternalServerError)
         {
@@ -43,13 +29,45 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         }
         else
         {
-            logger.LogWarning("Regla de negocio incumplida en {Method} {Path}: {Message}", httpContext.Request.Method, httpContext.Request.Path, exception.Message);
+            logger.LogInformation("{Titulo} en {Method} {Path}", problem.Title, httpContext.Request.Method, httpContext.Request.Path);
         }
 
         problem.Extensions["traceId"] = httpContext.TraceIdentifier;
         httpContext.Response.StatusCode = problem.Status!.Value;
-        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+
+        if (problem.Status == StatusCodes.Status401Unauthorized)
+        {
+            httpContext.Response.Headers.WWWAuthenticate = "Bearer";
+        }
+
+        // Se serializa con el tipo concreto para no perder los errores por campo de ValidationProblemDetails.
+        await httpContext.Response.WriteAsJsonAsync(problem, problem.GetType(), options: null, contentType: "application/problem+json", cancellationToken);
 
         return true;
     }
+
+    private static ProblemDetails Mapear(Exception exception) => exception switch
+    {
+        ValidacionException v => new ValidationProblemDetails(v.Errores)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Uno o más campos son inválidos.",
+        },
+        NoAutenticadoException e => Crear(StatusCodes.Status401Unauthorized, "No autenticado.", e.Message),
+        ProhibidoException e => Crear(StatusCodes.Status403Forbidden, "Acceso denegado.", e.Message),
+        NoEncontradoException e => Crear(StatusCodes.Status404NotFound, "Recurso no encontrado.", e.Message),
+        ConflictoException e => Crear(StatusCodes.Status409Conflict, "Conflicto con el estado actual.", e.Message),
+        DomainException e => Crear(StatusCodes.Status422UnprocessableEntity, "Regla de negocio incumplida.", e.Message),
+        _ => Crear(
+            StatusCodes.Status500InternalServerError,
+            "Ocurrió un error inesperado.",
+            "Si el problema persiste, comuníquelo indicando el identificador de la solicitud."),
+    };
+
+    private static ProblemDetails Crear(int status, string titulo, string detalle) => new()
+    {
+        Status = status,
+        Title = titulo,
+        Detail = detalle,
+    };
 }

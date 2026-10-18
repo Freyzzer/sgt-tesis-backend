@@ -12,10 +12,18 @@ public class DatabaseConfigurationTests
     private const string ValidConnection =
         "Server=(none);Database=pruebas;User ID=sgt_app_test;Password=marcador;Encrypt=True;Connect Timeout=15";
 
+    private sealed class UsuarioAnonimo : SGT.Tesis.Application.Common.Abstractions.ICurrentUser
+    {
+        public Guid? UserId => null;
+
+        public string? Rol => null;
+    }
+
     private static ServiceProvider Build(Dictionary<string, string?> values)
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         var services = new ServiceCollection();
+        services.AddSingleton<SGT.Tesis.Application.Common.Abstractions.ICurrentUser>(new UsuarioAnonimo());
         services.AddInfrastructure(configuration);
         return services.BuildServiceProvider();
     }

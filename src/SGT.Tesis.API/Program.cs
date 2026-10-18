@@ -1,6 +1,9 @@
 using Serilog;
+using SGT.Tesis.API.Endpoints;
 using SGT.Tesis.API.Extensions;
 using SGT.Tesis.API.Middleware;
+using SGT.Tesis.API.Security;
+using SGT.Tesis.Application;
 using SGT.Tesis.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +15,9 @@ builder.Host.UseSerilog((context, services, logger) => logger
 
 StartupChecks.EnsureAllowedHosts(builder.Environment, builder.Configuration);
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApiSecurity();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddApiCors();
@@ -23,6 +28,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// El log de peticiones va por fuera del manejador de excepciones para registrar el estado final.
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
@@ -39,10 +46,13 @@ else
 
 app.UseHttpsRedirection();
 app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseSerilogRequestLogging();
 app.UseCors();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy" }));
+app.MapAuthEndpoints();
 
 app.Run();
 
