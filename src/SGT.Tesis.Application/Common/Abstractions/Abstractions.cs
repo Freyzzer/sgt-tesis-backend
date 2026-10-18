@@ -7,6 +7,11 @@ public interface ICommandHandler<in TCommand, TResult>
     Task<TResult> HandleAsync(TCommand command, CancellationToken cancellationToken);
 }
 
+public interface IQueryHandler<in TQuery, TResult>
+{
+    Task<TResult> HandleAsync(TQuery query, CancellationToken cancellationToken);
+}
+
 public interface IClock
 {
     DateTime UtcNow { get; }
@@ -58,6 +63,10 @@ public interface IUsuarioRepository
     Task<bool> ExisteCorreoAsync(string correoNormalizado, CancellationToken cancellationToken);
 
     Task<bool> ExisteAdministradorAsync(CancellationToken cancellationToken);
+
+    Task<int> ContarAdministradoresActivosAsync(CancellationToken cancellationToken);
+
+    Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(int page, int pageSize, Rol? rol, bool? activo, CancellationToken cancellationToken);
 
     void Agregar(Usuario usuario);
 }

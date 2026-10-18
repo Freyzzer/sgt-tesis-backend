@@ -45,6 +45,26 @@ public static class AuthExtensions
                     NameClaimType = "sub",
                     RoleClaimType = "role",
                 };
+
+                // Una cuenta desactivada o con rol cambiado pierde el acceso de inmediato,
+                // sin esperar a que venza el access token.
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var usuarios = context.HttpContext.RequestServices.GetRequiredService<IUsuarioRepository>();
+                        var sub = context.Principal?.FindFirst("sub")?.Value;
+                        var usuario = Guid.TryParse(sub, out var id)
+                            ? await usuarios.ObtenerPorIdAsync(id, context.HttpContext.RequestAborted)
+                            : null;
+
+                        if (usuario is null || !usuario.Activo
+                            || usuario.Rol.ToString() != context.Principal?.FindFirst("role")?.Value)
+                        {
+                            context.Fail("Sesión no vigente.");
+                        }
+                    },
+                };
             });
 
         services.AddAuthorizationBuilder()

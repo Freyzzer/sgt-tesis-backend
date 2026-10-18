@@ -15,7 +15,8 @@ public static class DependencyInjection
         var handlers = assembly.GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false })
             .SelectMany(t => t.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<,>))
+                .Where(i => i.IsGenericType
+                    && (i.GetGenericTypeDefinition() == typeof(ICommandHandler<,>) || i.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)))
                 .Select(i => (Service: i, Implementation: t)));
 
         foreach (var (service, implementation) in handlers)

@@ -18,6 +18,38 @@ internal sealed class UsuarioRepository(AppDbContext db) : IUsuarioRepository
     public Task<bool> ExisteAdministradorAsync(CancellationToken cancellationToken) =>
         db.Usuarios.AnyAsync(u => u.Rol == Rol.Administrador, cancellationToken);
 
+    public Task<int> ContarAdministradoresActivosAsync(CancellationToken cancellationToken) =>
+        db.Usuarios.CountAsync(u => u.Rol == Rol.Administrador && u.Activo, cancellationToken);
+
+    public async Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(
+        int page,
+        int pageSize,
+        Rol? rol,
+        bool? activo,
+        CancellationToken cancellationToken)
+    {
+        var consulta = db.Usuarios.AsNoTracking().AsQueryable();
+
+        if (rol is not null)
+        {
+            consulta = consulta.Where(u => u.Rol == rol);
+        }
+
+        if (activo is not null)
+        {
+            consulta = consulta.Where(u => u.Activo == activo);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken);
+        var items = await consulta
+            .OrderBy(u => u.Apellidos).ThenBy(u => u.Nombres).ThenBy(u => u.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
     public void Agregar(Usuario usuario) => db.Usuarios.Add(usuario);
 }
 

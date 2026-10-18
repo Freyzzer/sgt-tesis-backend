@@ -1,5 +1,7 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.Common;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
@@ -30,5 +32,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
 internal sealed class UnitOfWork(AppDbContext db) : IUnitOfWork
 {
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (EsViolacionDeUnicidad(ex))
+        {
+            // Carrera entre dos solicitudes: el índice único es la última defensa.
+            throw new ConflictoException("Ya existe un registro con esos datos.");
+        }
+    }
+
+    private static bool EsViolacionDeUnicidad(DbUpdateException ex) => ex.InnerException switch
+    {
+        SqlException sql => sql.Number is 2601 or 2627,
+        { } inner => inner.Message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase),
+        _ => false,
+    };
 }

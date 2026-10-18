@@ -15,6 +15,9 @@ builder.Host.UseSerilog((context, services, logger) => logger
 
 StartupChecks.EnsureAllowedHosts(builder.Environment, builder.Configuration);
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApiSecurity();
@@ -53,6 +56,7 @@ app.UseAuthorization();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy" }));
 app.MapAuthEndpoints();
+app.MapUsuariosEndpoints();
 
 app.Run();
 

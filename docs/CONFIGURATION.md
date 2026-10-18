@@ -42,3 +42,10 @@ dotnet user-secrets set "Bootstrap:AdminCorreo" "admin@institucion.edu" --projec
 dotnet user-secrets set "Bootstrap:AdminPassword" "<contraseña-inicial>" --project src/SGT.Tesis.API
 dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-project src/SGT.Tesis.API
 ```
+
+## Gestión de usuarios (solo Administrador)
+
+- `POST /api/v1/usuarios`, `GET /api/v1/usuarios?page&pageSize&rol&activo`, `GET /api/v1/usuarios/{id}`, `PATCH /api/v1/usuarios/{id}/estado` y `PATCH /api/v1/usuarios/{id}/rol`.
+- Política de contraseña: mínimo 12 caracteres con mayúscula, minúscula, número y símbolo.
+- Correo único (sin distinguir mayúsculas). No se puede desactivar ni cambiar el rol del propio usuario, ni dejar al sistema sin Administrador activo.
+- Desactivar un usuario revoca sus refresh tokens y, además, el estado y el rol se verifican en cada petición: un access token vigente de una cuenta desactivada o con rol cambiado deja de valer de inmediato.
