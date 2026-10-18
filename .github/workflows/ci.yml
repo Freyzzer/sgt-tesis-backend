@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore SGT.Tesis.slnx
+
+      - name: Format
+        run: dotnet format SGT.Tesis.slnx --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build SGT.Tesis.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test SGT.Tesis.slnx --no-build -c Release --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+      - name: Vulnerable packages
+        shell: bash
+        run: |
+          dotnet list SGT.Tesis.slnx package --vulnerable --include-transitive 2>&1 | tee vuln.txt
+          if grep -qE "^\s+>" vuln.txt; then
+            echo "Se encontraron paquetes vulnerables"; exit 1
+          fi
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: TestResults/**/coverage.cobertura.xml
