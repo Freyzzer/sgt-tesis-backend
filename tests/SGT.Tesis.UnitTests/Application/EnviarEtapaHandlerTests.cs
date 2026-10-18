@@ -1,0 +1,94 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Domain.GestionTesis;
+using SGT.Tesis.Domain.Identidad;
+
+namespace SGT.Tesis.UnitTests.Application;
+
+public class EnviarEtapaHandlerTests
+{
+    private static readonly DateTime Ahora = new(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc);
+
+    private sealed class Actual(Guid? id, string? rol) : ICurrentUser
+    {
+        public Guid? UserId { get; } = id;
+
+        public string? Rol { get; } = rol;
+    }
+
+    private sealed class Repositorio(TesisGrado tesis) : ITesisRepository
+    {
+        public Task<TesisGrado?> ObtenerActivaDeEstudianteAsync(Guid studentId, CancellationToken cancellationToken) =>
+            Task.FromResult<TesisGrado?>(tesis.StudentId == studentId ? tesis : null);
+
+        public Task<TesisGrado?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult<TesisGrado?>(tesis.Id == id ? tesis : null);
+
+        public Task<bool> ExisteActivaAsync(Guid studentId, CancellationToken cancellationToken) =>
+            Task.FromResult(tesis.StudentId == studentId);
+
+        public void Agregar(TesisGrado nueva)
+        {
+        }
+    }
+
+    private sealed class Requisitos(params string[] faltantes) : IRequisitosDocumentales
+    {
+        public Task<IReadOnlyList<string>> ObtenerFaltantesAsync(Guid etapaId, EtapaTipo tipo, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<string>>(faltantes);
+    }
+
+    private sealed class Guardado : IUnitOfWork
+    {
+        public int Guardados { get; private set; }
+
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+        {
+            Guardados++;
+            return Task.FromResult(1);
+        }
+    }
+
+    private static (EnviarEtapaARevisionHandler Handler, TesisGrado Tesis, Guardado Guardado) Preparar(params string[] faltantes)
+    {
+        var estudiante = Guid.NewGuid();
+        var tesis = TesisGrado.Crear(estudiante, "Titulo", "Resumen", Ahora);
+        var guardado = new Guardado();
+        var handler = new EnviarEtapaARevisionHandler(
+            new Repositorio(tesis),
+            new Requisitos(faltantes),
+            new Actual(estudiante, nameof(Rol.Estudiante)),
+            guardado,
+            NullLogger<EnviarEtapaARevisionHandler>.Instance);
+
+        return (handler, tesis, guardado);
+    }
+
+    [Fact]
+    [Trait("AC", "6.2")]
+    public async Task Con_documentos_faltantes_lanza_EtapaIncompleta_con_la_lista_y_no_cambia_el_estado()
+    {
+        var (handler, tesis, guardado) = Preparar("Propuesta firmada", "Carta de aval");
+
+        var ex = await Assert.ThrowsAsync<EtapaIncompletaException>(
+            () => handler.HandleAsync(new EnviarEtapaARevisionCommand(tesis.Id, 1), CancellationToken.None));
+
+        Assert.Equal(["Propuesta firmada", "Carta de aval"], ex.Faltantes);
+        Assert.Equal(EstadoEtapa.Pendiente, tesis.EtapaActual.Estado);
+        Assert.Equal(0, guardado.Guardados);
+    }
+
+    [Fact]
+    [Trait("AC", "6.1")]
+    public async Task Sin_faltantes_envia_a_revision_y_guarda()
+    {
+        var (handler, tesis, guardado) = Preparar();
+
+        var resultado = await handler.HandleAsync(new EnviarEtapaARevisionCommand(tesis.Id, 1), CancellationToken.None);
+
+        Assert.Equal("EnRevision", resultado.EtapaActual.Estado);
+        Assert.Equal(1, guardado.Guardados);
+    }
+}

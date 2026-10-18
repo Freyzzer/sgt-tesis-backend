@@ -57,12 +57,21 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         ProhibidoException e => Crear(StatusCodes.Status403Forbidden, "Acceso denegado.", e.Message),
         NoEncontradoException e => Crear(StatusCodes.Status404NotFound, "Recurso no encontrado.", e.Message),
         ConflictoException e => Crear(StatusCodes.Status409Conflict, "Conflicto con el estado actual.", e.Message),
+        EtapaIncompletaException e => ConFaltantes(e),
+        TransicionInvalidaException e => Crear(StatusCodes.Status409Conflict, "Operación no válida para el estado actual.", e.Message),
         DomainException e => Crear(StatusCodes.Status422UnprocessableEntity, "Regla de negocio incumplida.", e.Message),
         _ => Crear(
             StatusCodes.Status500InternalServerError,
             "Ocurrió un error inesperado.",
             "Si el problema persiste, comuníquelo indicando el identificador de la solicitud."),
     };
+
+    private static ProblemDetails ConFaltantes(EtapaIncompletaException e)
+    {
+        var problem = Crear(StatusCodes.Status422UnprocessableEntity, "Etapa incompleta.", e.Message);
+        problem.Extensions["faltantes"] = e.Faltantes;
+        return problem;
+    }
 
     private static ProblemDetails Crear(int status, string titulo, string detalle) => new()
     {

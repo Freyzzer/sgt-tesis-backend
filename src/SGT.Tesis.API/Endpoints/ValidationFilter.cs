@@ -15,18 +15,26 @@ public sealed class ValidationFilter<T> : IEndpointFilter
             throw new ValidacionException(new Dictionary<string, string[]> { ["cuerpo"] = ["El cuerpo de la solicitud es obligatorio."] });
         }
 
-        var validador = context.HttpContext.RequestServices.GetService<IValidator<T>>();
-
-        if (validador is not null)
-        {
-            var resultado = await validador.ValidateAsync(argumento, context.HttpContext.RequestAborted);
-
-            if (!resultado.IsValid)
-            {
-                throw new ValidacionException(resultado.ToDictionary());
-            }
-        }
+        await ValidarAsync(argumento, context.HttpContext.RequestServices, context.HttpContext.RequestAborted);
 
         return await next(context);
+    }
+
+    /// <summary>Validación explícita para comandos armados a partir de la ruta y el cuerpo.</summary>
+    public static async Task ValidarAsync(T argumento, IServiceProvider services, CancellationToken cancellationToken)
+    {
+        var validador = services.GetService<IValidator<T>>();
+
+        if (validador is null)
+        {
+            return;
+        }
+
+        var resultado = await validador.ValidateAsync(argumento, cancellationToken);
+
+        if (!resultado.IsValid)
+        {
+            throw new ValidacionException(resultado.ToDictionary());
+        }
     }
 }

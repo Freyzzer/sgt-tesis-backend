@@ -5,6 +5,8 @@ namespace SGT.Tesis.UnitTests.Domain;
 
 public class TesisGradoTests
 {
+    private static readonly DateTime Ahora = new(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc);
+
     private static readonly Guid Estudiante = Guid.NewGuid();
 
     [Fact]
@@ -12,7 +14,7 @@ public class TesisGradoTests
     [Trait("AC", "4.5")]
     public void Crear_con_StudentId_vacio_lanza_excepcion_de_dominio()
     {
-        var ex = Assert.Throws<DomainException>(() => TesisGrado.Crear(Guid.Empty, "Titulo", "Resumen"));
+        var ex = Assert.Throws<DomainException>(() => TesisGrado.Crear(Guid.Empty, "Titulo", "Resumen", Ahora));
 
         Assert.Contains("StudentId", ex.Message);
     }
@@ -24,7 +26,7 @@ public class TesisGradoTests
     [InlineData("   ")]
     public void Crear_sin_titulo_lanza_excepcion_de_dominio(string? titulo)
     {
-        Assert.Throws<DomainException>(() => TesisGrado.Crear(Estudiante, titulo, "Resumen"));
+        Assert.Throws<DomainException>(() => TesisGrado.Crear(Estudiante, titulo, "Resumen", Ahora));
     }
 
     [Fact]
@@ -34,7 +36,7 @@ public class TesisGradoTests
     {
         var titulo = new string('a', TesisGrado.TituloMaxLength + 1);
 
-        Assert.Throws<DomainException>(() => TesisGrado.Crear(Estudiante, titulo, "Resumen"));
+        Assert.Throws<DomainException>(() => TesisGrado.Crear(Estudiante, titulo, "Resumen", Ahora));
     }
 
     [Fact]
@@ -43,7 +45,7 @@ public class TesisGradoTests
     {
         var resumen = new string('a', TesisGrado.ResumenMaxLength + 1);
 
-        Assert.Throws<DomainException>(() => TesisGrado.Crear(Estudiante, "Titulo", resumen));
+        Assert.Throws<DomainException>(() => TesisGrado.Crear(Estudiante, "Titulo", resumen, Ahora));
     }
 
     [Fact]
@@ -53,7 +55,7 @@ public class TesisGradoTests
         var tesis = TesisGrado.Crear(
             Estudiante,
             new string('a', TesisGrado.TituloMaxLength),
-            new string('b', TesisGrado.ResumenMaxLength));
+            new string('b', TesisGrado.ResumenMaxLength), Ahora);
 
         Assert.Equal(Estudiante, tesis.StudentId);
     }
@@ -62,7 +64,7 @@ public class TesisGradoTests
     [Trait("AC", "17.1")]
     public void Crear_asigna_Id_guid_no_vacio_y_recorta_espacios()
     {
-        var tesis = TesisGrado.Crear(Estudiante, "  Titulo  ", " Resumen ");
+        var tesis = TesisGrado.Crear(Estudiante, "  Titulo  ", " Resumen ", Ahora);
 
         Assert.NotEqual(Guid.Empty, tesis.Id);
         Assert.Equal("Titulo", tesis.Titulo);
@@ -73,8 +75,8 @@ public class TesisGradoTests
     [Trait("AC", "17.1")]
     public void Dos_tesis_tienen_Id_distintos()
     {
-        var a = TesisGrado.Crear(Estudiante, "A", "A");
-        var b = TesisGrado.Crear(Estudiante, "B", "B");
+        var a = TesisGrado.Crear(Estudiante, "A", "A", Ahora);
+        var b = TesisGrado.Crear(Estudiante, "B", "B", Ahora);
 
         Assert.NotEqual(a.Id, b.Id);
     }

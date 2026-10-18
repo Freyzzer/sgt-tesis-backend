@@ -20,3 +20,10 @@ public sealed class ValidacionException(IDictionary<string, string[]> errores) :
 {
     public IDictionary<string, string[]> Errores { get; } = errores;
 }
+
+/// <summary>La etapa no puede enviarse porque faltan documentos obligatorios (422).</summary>
+public sealed class EtapaIncompletaException(IReadOnlyList<string> faltantes)
+    : AppException("Faltan documentos obligatorios para enviar la etapa.")
+{
+    public IReadOnlyList<string> Faltantes { get; } = faltantes;
+}

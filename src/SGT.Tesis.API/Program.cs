@@ -57,6 +57,7 @@ app.UseAuthorization();
 app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy" }));
 app.MapAuthEndpoints();
 app.MapUsuariosEndpoints();
+app.MapTesisEndpoints();
 
 app.Run();
 

@@ -22,6 +22,46 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SGT.Tesis.Domain.GestionTesis.Etapa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaApertura")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaCierre")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TesisId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TesisId", "Tipo")
+                        .IsUnique();
+
+                    b.ToTable("Etapas", (string)null);
+                });
+
             modelBuilder.Entity("SGT.Tesis.Domain.GestionTesis.TesisGrado", b =>
                 {
                     b.Property<Guid>("Id")
@@ -32,6 +72,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
 
                     b.Property<string>("Resumen")
                         .IsRequired()
@@ -54,7 +97,10 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StudentId");
+                    b.HasIndex("StudentId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Tesis_StudentId_EnCurso")
+                        .HasFilter("[Estado] = 1");
 
                     b.ToTable("Tesis", (string)null);
                 });
@@ -165,6 +211,15 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                     b.ToTable("Usuarios", (string)null);
                 });
 
+            modelBuilder.Entity("SGT.Tesis.Domain.GestionTesis.Etapa", b =>
+                {
+                    b.HasOne("SGT.Tesis.Domain.GestionTesis.TesisGrado", null)
+                        .WithMany("Etapas")
+                        .HasForeignKey("TesisId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SGT.Tesis.Domain.Identidad.RefreshToken", b =>
                 {
                     b.HasOne("SGT.Tesis.Domain.Identidad.Usuario", null)
@@ -172,6 +227,11 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.GestionTesis.TesisGrado", b =>
+                {
+                    b.Navigation("Etapas");
                 });
 #pragma warning restore 612, 618
         }

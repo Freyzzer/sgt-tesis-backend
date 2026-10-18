@@ -4,11 +4,13 @@ namespace SGT.Tesis.UnitTests.Domain;
 
 public class BaseEntityTests
 {
+    private static readonly DateTime Ahora = new(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     [Trait("AC", "17.1")]
     public void MarkCreated_registra_fecha_y_autor()
     {
-        var tesis = TesisGrado.Crear(Guid.NewGuid(), "Titulo", "Resumen");
+        var tesis = TesisGrado.Crear(Guid.NewGuid(), "Titulo", "Resumen", Ahora);
         var ahora = new DateTime(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc);
         var autor = Guid.NewGuid();
 
@@ -24,7 +26,7 @@ public class BaseEntityTests
     [Trait("AC", "17.1")]
     public void MarkUpdated_registra_fecha_y_autor_sin_alterar_la_creacion()
     {
-        var tesis = TesisGrado.Crear(Guid.NewGuid(), "Titulo", "Resumen");
+        var tesis = TesisGrado.Crear(Guid.NewGuid(), "Titulo", "Resumen", Ahora);
         var creada = new DateTime(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc);
         var autor = Guid.NewGuid();
         var editor = Guid.NewGuid();

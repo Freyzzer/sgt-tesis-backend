@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Infrastructure.Identity;
 using SGT.Tesis.Infrastructure.Persistence;
 using SGT.Tesis.Infrastructure.Persistence.Repositories;
@@ -51,6 +52,8 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<ITesisRepository, TesisRepository>();
+        services.AddScoped<IRequisitosDocumentales, SinRequisitosDocumentales>();
 
         services.AddHostedService<AdminBootstrapService>();
 
