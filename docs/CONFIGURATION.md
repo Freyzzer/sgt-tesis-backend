@@ -97,3 +97,11 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 ## Retroalimentación consolidada
 
 `GET /api/v1/tesis/{id}/retroalimentacion` (dueño y Administrador): por etapa, las decisiones con su justificación y, **una vez decidida la etapa**, el veredicto vigente de cada evaluador de forma **anónima** (`Evaluador 1`, `Evaluador 2`…, sin identificadores ni correos). Antes de la decisión no se muestran veredictos.
+
+## Dashboard del Administrador
+
+- `GET /api/v1/dashboard/kpis[?diasEstancamiento=15]` (1–365): totales de tesis por estado; tesis en curso por etapa; tiempo promedio en días por etapa cerrada; decisiones (total, aprobadas, observadas, rechazadas y sus tasas en %); etapas en revisión y **estancadas** (más de N días esperando validación); carga por evaluador (asignaciones activas en etapas en revisión y veredictos pendientes).
+- `GET /api/v1/dashboard/cola-validacion[?page&pageSize]` (≤ 100): etapas en revisión de la que más tiempo lleva esperando a la más reciente, con estudiante, título, días en revisión, evaluadores asignados y cuántos ya emitieron veredicto.
+- Solo Administrador. Se calculan con proyecciones (sin cargar entidades completas); solo el promedio de días se calcula en memoria sobre dos fechas por etapa cerrada.
+- Rendimiento: la prueba de humo con 10 000 tesis responde en menos de 2 s sobre SQLite en memoria. El objetivo p95 < 800 ms debe medirse contra SQL Server con pruebas de carga (Sprint 8). Si el volumen crece, conviene materializar los promedios.
+- `Etapa.EnRevisionDesde` registra el último envío a revisión (las etapas ya en revisión antes de esta versión usan su fecha de apertura).

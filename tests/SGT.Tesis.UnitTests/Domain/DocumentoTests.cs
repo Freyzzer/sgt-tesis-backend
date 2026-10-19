@@ -51,7 +51,7 @@ public class DocumentoTests
 
         Assert.True(tesis.ExigirEtapaEditable(EtapaTipo.Estudiante).AdmiteDocumentos);
 
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, DateTime.UtcNow);
 
         var ex = Assert.Throws<TransicionInvalidaException>(() => tesis.ExigirEtapaEditable(EtapaTipo.Estudiante));
         Assert.Contains("revisión", ex.Message);

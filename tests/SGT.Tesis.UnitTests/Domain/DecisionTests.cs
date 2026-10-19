@@ -14,7 +14,7 @@ public class DecisionTests
     private static TesisGrado EnRevision()
     {
         var tesis = TesisGrado.Crear(Guid.NewGuid(), "Titulo", "Resumen", Ahora);
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora);
 
         return tesis;
     }
@@ -69,7 +69,7 @@ public class DecisionTests
         Assert.Equal(EstadoTesis.EnCurso, tesis.Estado);
         Assert.Single(tesis.Etapas);
 
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora);
 
         Assert.Equal(EstadoEtapa.EnRevision, tesis.EtapaActual.Estado);
     }
@@ -84,7 +84,7 @@ public class DecisionTests
         Assert.Equal(EstadoEtapa.Rechazado, tesis.EtapaActual.Estado);
         Assert.Equal(EstadoTesis.Rechazada, tesis.Estado);
         Assert.NotNull(tesis.EtapaActual.FechaCierre);
-        Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Estudiante));
+        Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora));
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class DecisionTests
 
         Assert.Throws<TransicionInvalidaException>(() => tesis.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Aprobada, Admin, null, Ahora));
 
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora);
         tesis.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Aprobada, Admin, null, Ahora);
 
         Assert.Throws<TransicionInvalidaException>(() => tesis.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Aprobada, Admin, null, Ahora));
@@ -118,7 +118,7 @@ public class DecisionTests
 
         foreach (var tipo in Enum.GetValues<EtapaTipo>())
         {
-            tesis.EnviarEtapaARevision(tipo);
+            tesis.EnviarEtapaARevision(tipo, Ahora);
             tesis.Decidir(tipo, ResultadoDecision.Aprobada, Admin, null, Ahora);
         }
 
@@ -135,7 +135,7 @@ public class DecisionTests
         var tesis = TesisGrado.Crear(Guid.NewGuid(), "Titulo", "Resumen", Ahora);
         var inicial = tesis.EtapaActual.Revision;
 
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora);
         var enviada = tesis.EtapaActual.Revision;
         tesis.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Aprobada, Admin, null, Ahora);
 

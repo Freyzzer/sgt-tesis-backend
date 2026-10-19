@@ -20,6 +20,9 @@ public sealed class Etapa : BaseEntity
 
     public DateTime? FechaCierre { get; private set; }
 
+    /// <summary>Momento del último envío a revisión; permite medir cuánto lleva esperando una validación.</summary>
+    public DateTime? EnRevisionDesde { get; private set; }
+
     /// <summary>Contador de cambios de estado; se usa como token de concurrencia optimista.</summary>
     public int Revision { get; private set; }
 
@@ -38,7 +41,7 @@ public sealed class Etapa : BaseEntity
     };
 
     /// <summary>Pendiente u Observado → EnRevision.</summary>
-    internal void EnviarARevision()
+    internal void EnviarARevision(DateTime utcNow)
     {
         if (Estado is not (EstadoEtapa.Pendiente or EstadoEtapa.Observado))
         {
@@ -48,6 +51,7 @@ public sealed class Etapa : BaseEntity
         }
 
         Estado = EstadoEtapa.EnRevision;
+        EnRevisionDesde = utcNow;
         Revision++;
     }
 

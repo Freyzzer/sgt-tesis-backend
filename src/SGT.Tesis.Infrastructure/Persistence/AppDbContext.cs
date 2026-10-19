@@ -16,6 +16,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<TesisGrado> Tesis => Set<TesisGrado>();
 
+    public DbSet<Etapa> Etapas => Set<Etapa>();
+
     public DbSet<Documento> Documentos => Set<Documento>();
 
     public DbSet<AsignacionEvaluador> Asignaciones => Set<AsignacionEvaluador>();

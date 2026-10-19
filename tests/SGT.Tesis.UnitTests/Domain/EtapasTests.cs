@@ -29,7 +29,7 @@ public class EtapasTests
     {
         var tesis = Nueva();
 
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora);
 
         Assert.Equal(EstadoEtapa.EnRevision, tesis.EtapaActual.Estado);
     }
@@ -40,7 +40,7 @@ public class EtapasTests
     {
         var tesis = Nueva();
 
-        Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Propuesta));
+        Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Propuesta, Ahora));
         Assert.Equal(EstadoEtapa.Pendiente, tesis.EtapaActual.Estado);
     }
 
@@ -49,9 +49,9 @@ public class EtapasTests
     public void Enviar_dos_veces_la_misma_etapa_es_una_transicion_invalida()
     {
         var tesis = Nueva();
-        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante);
+        tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora);
 
-        var ex = Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Estudiante));
+        var ex = Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora));
 
         Assert.Contains("revisión", ex.Message);
     }

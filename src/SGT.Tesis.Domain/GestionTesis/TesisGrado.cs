@@ -68,7 +68,7 @@ public sealed class TesisGrado : BaseEntity
     }
 
     /// <summary>Envía a revisión la etapa indicada, que debe ser la actual y estar Pendiente u Observada.</summary>
-    public Etapa EnviarEtapaARevision(EtapaTipo tipo)
+    public Etapa EnviarEtapaARevision(EtapaTipo tipo, DateTime utcNow)
     {
         if (Estado != EstadoTesis.EnCurso)
         {
@@ -82,7 +82,7 @@ public sealed class TesisGrado : BaseEntity
             throw new TransicionInvalidaException("La etapa indicada no es la etapa actual de la tesis.");
         }
 
-        etapa.EnviarARevision();
+        etapa.EnviarARevision(utcNow);
 
         return etapa;
     }

@@ -294,6 +294,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("EnRevisionDesde")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 

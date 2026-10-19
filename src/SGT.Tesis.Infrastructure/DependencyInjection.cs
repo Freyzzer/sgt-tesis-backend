@@ -8,6 +8,7 @@ using SGT.Tesis.Application.Documentos;
 using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Application.Notificaciones;
+using SGT.Tesis.Application.Reportes;
 using SGT.Tesis.Infrastructure.Documentos;
 using SGT.Tesis.Infrastructure.Identity;
 using SGT.Tesis.Infrastructure.Notificaciones;
@@ -65,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<IVeredictoRepository, VeredictoRepository>();
         services.AddScoped<IDecisionRepository, DecisionRepository>();
         services.AddScoped<IAuditTrail, AuditTrail>();
+        services.AddScoped<IReportesRepository, ReportesRepository>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
         services.AddScoped<ITesisRepository, TesisRepository>();
         services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();

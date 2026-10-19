@@ -62,6 +62,7 @@ app.MapTesisEndpoints();
 app.MapDocumentosEndpoints();
 app.MapEvaluacionEndpoints();
 app.MapAuditoriaEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();
 

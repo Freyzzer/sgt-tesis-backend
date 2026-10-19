@@ -80,6 +80,11 @@ public class EnviarEtapaHandlerTests
         }
     }
 
+    private sealed class Reloj : IClock
+    {
+        public DateTime UtcNow => Ahora;
+    }
+
     private sealed class Requisitos(params string[] faltantes) : IRequisitosDocumentales
     {
         public Task<IReadOnlyList<string>> ObtenerFaltantesAsync(Guid etapaId, EtapaTipo tipo, CancellationToken cancellationToken) =>
@@ -109,6 +114,7 @@ public class EnviarEtapaHandlerTests
             new NotificadorEnMemoria(),
             new Requisitos(faltantes),
             new Actual(estudiante, nameof(Rol.Estudiante)),
+            new Reloj(),
             guardado,
             new AuditoriaEnMemoria(),
             NullLogger<EnviarEtapaARevisionHandler>.Instance);

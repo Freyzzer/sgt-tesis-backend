@@ -25,6 +25,7 @@ public sealed class EnviarEtapaARevisionHandler(
     INotificador notificador,
     IRequisitosDocumentales requisitos,
     ICurrentUser actual,
+    IClock clock,
     IUnitOfWork unitOfWork,
     IAuditTrail audit,
     ILogger<EnviarEtapaARevisionHandler> logger) : ICommandHandler<EnviarEtapaARevisionCommand, TesisDto>
@@ -48,7 +49,7 @@ public sealed class EnviarEtapaARevisionHandler(
             throw new EtapaIncompletaException(faltantes);
         }
 
-        propia.EnviarEtapaARevision(tipo);
+        propia.EnviarEtapaARevision(tipo, clock.UtcNow);
 
         var (asunto, cuerpo) = Plantillas.EtapaEnRevision(tipo);
 
