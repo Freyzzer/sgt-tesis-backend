@@ -118,11 +118,16 @@ public class AuditoriaEndpointsTests
         var (evaluadorId, _) = await factory.SembrarUsuarioAsync(Rol.Evaluador);
         using var estudiante = await factory.ClienteComoAsync(correo);
         using var admin = await factory.ClienteAdministradorAsync();
+        // En la realidad cada acción ocurre en un instante distinto; el reloj de prueba es fijo, así que se avanza.
+        factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
         var tesisId = (await (await estudiante.PostAsJsonAsync("/api/v1/tesis", new { titulo = "T", resumen = "R" }, cancellationToken: TestContext.Current.CancellationToken)).LeerJsonAsync()).GetProperty("id").GetGuid();
         var etapa = $"/api/v1/tesis/{tesisId}/etapas/1";
 
+        factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
         await estudiante.PostAsync($"{etapa}/enviar", null, TestContext.Current.CancellationToken);
+        factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
         await admin.PostAsJsonAsync($"{etapa}/evaluadores", new { evaluadorId }, cancellationToken: TestContext.Current.CancellationToken);
+        factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
         await admin.PostAsJsonAsync($"{etapa}/decisiones", new { resultado = "Aprobada" }, cancellationToken: TestContext.Current.CancellationToken);
 
         var historial = await Consultar(admin, $"?tesisId={tesisId}&pageSize=100");

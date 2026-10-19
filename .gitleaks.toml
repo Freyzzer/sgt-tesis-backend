@@ -11,3 +11,8 @@ paths = ['''(^|/)\.env\.example$''']
 [[allowlists]]
 description = "Cadenas de prueba de la prueba de privacidad de correos (historial de commits; ya renombradas)"
 regexes = ['''TituloSecreto-Quimica-9821''', '''ComentarioSecreto-evaluador-7730''']
+
+[[allowlists]]
+description = "Contraseña de un contenedor de SQL Server efímero que solo existe durante el job de pruebas del CI"
+paths = ['''(^|/)\.github/workflows/ci\.yml$''']
+regexes = ['''Ci-Efimero#2026-Sgt''']

@@ -152,7 +152,14 @@ dotnet format SGT.Tesis.slnx --verify-no-changes                                
 dotnet list SGT.Tesis.slnx package --vulnerable --include-transitive                  # paquetes vulnerables
 ```
 
-Cada criterio de aceptación de la especificación tiene pruebas etiquetadas (`[Trait("AC", "11.4")]`). Las pruebas de API usan SQLite en memoria y **no se ejecutan contra SQL Server en el CI** (el stack completo sí se verificó con Docker; ver [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)).
+Cada criterio de aceptación de la especificación tiene pruebas etiquetadas (`[Trait("AC", "11.4")]`). Las pruebas de API usan SQLite en memoria por defecto (rápidas) y el CI **también las ejecuta contra un SQL Server real** (job `pruebas-sql-server`): cada prueba crea y elimina su propia base de datos, y otra prueba aplica todas las migraciones en una base nueva y comprueba que el modelo no tenga cambios sin migrar. Para correrlas en local contra SQL Server (por ejemplo, el contenedor de `docker compose`):
+
+```bash
+export SGT_TEST_SQLSERVER="Server=127.0.0.1,14330;User Id=sa;Password=<clave-sa>;TrustServerCertificate=True;Encrypt=True"
+dotnet test --project tests/SGT.Tesis.IntegrationTests
+```
+
+Use `127.0.0.1` y no `localhost` (en Windows `localhost` puede resolver a IPv6 y Docker solo publica IPv4). La cuenta debe poder crear bases de datos; no use un servidor con datos reales.
 
 ## Flujo de trabajo con Git
 

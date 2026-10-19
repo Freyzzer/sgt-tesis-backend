@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -58,15 +59,27 @@ public sealed class FakeClock : IClock
 }
 
 /// <summary>
-/// API completa en memoria con SQLite en lugar de SQL Server y un reloj controlable.
-/// Cada instancia tiene su propia base de datos aislada.
+/// API completa en memoria con un reloj controlable. Cada instancia tiene su propia base de datos aislada.
+/// Por defecto usa SQLite en memoria; si la variable de entorno <c>SGT_TEST_SQLSERVER</c> contiene la cadena de
+/// conexión de un SQL Server (con permiso para crear bases de datos), cada instancia crea y elimina su propia base
+/// en ese servidor, de modo que las mismas pruebas verifican el comportamiento real de SQL Server.
 /// </summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     public const string AdminCorreo = "admin@institucion.edu";
     public const string AdminPassword = "Admin#Prueba123";
 
+    public const string VariableSqlServer = "SGT_TEST_SQLSERVER";
+
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
+    private readonly string? _servidorSqlServer = Environment.GetEnvironmentVariable(VariableSqlServer);
+    private readonly string _nombreBaseSqlServer = $"sgt_test_{Guid.NewGuid():N}";
+
+    /// <summary>Indica si esta ejecución usa SQL Server real en lugar de SQLite.</summary>
+    public static bool UsaSqlServer => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(VariableSqlServer));
+
+    private string CadenaSqlServer(string baseDeDatos) =>
+        new SqlConnectionStringBuilder(_servidorSqlServer!) { InitialCatalog = baseDeDatos, Pooling = true }.ConnectionString;
 
     /// <summary>Carpeta temporal de archivos de esta instancia; se elimina al liberar la fábrica.</summary>
     public string RutaAlmacen { get; } = Path.Combine(Path.GetTempPath(), "sgt-tesis-pruebas", Guid.NewGuid().ToString("N"));
@@ -120,15 +133,33 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Reloj);
 
-            _connection.Open();
-            using (var esquema = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options))
+            var opcionesEsquema = new DbContextOptionsBuilder<AppDbContext>();
+
+            if (UsaSqlServer)
+            {
+                opcionesEsquema.UseSqlServer(CadenaSqlServer(_nombreBaseSqlServer));
+            }
+            else
+            {
+                _connection.Open();
+                opcionesEsquema.UseSqlite(_connection);
+            }
+
+            using (var esquema = new AppDbContext(opcionesEsquema.Options))
             {
                 esquema.Database.EnsureCreated();
             }
 
             services.AddDbContext<AppDbContext>((provider, options) =>
             {
-                if (BaseDeDatosInaccesible)
+                if (UsaSqlServer)
+                {
+                    // Un servidor inexistente (puerto 1) con tiempo de espera corto simula la base caída.
+                    options.UseSqlServer(BaseDeDatosInaccesible
+                        ? "Server=tcp:127.0.0.1,1;Database=no_existe;User Id=x;Password=x;Connect Timeout=2;Encrypt=False"
+                        : CadenaSqlServer(_nombreBaseSqlServer));
+                }
+                else if (BaseDeDatosInaccesible)
                 {
                     options.UseSqlite("Data Source=/no/existe/sgt.db;Mode=ReadOnly");
                 }
@@ -144,10 +175,33 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         });
     }
 
+    private void EliminarBaseSqlServer()
+    {
+        try
+        {
+            SqlConnection.ClearAllPools();
+            using var conexion = new SqlConnection(CadenaSqlServer("master"));
+            conexion.Open();
+            using var comando = conexion.CreateCommand();
+            comando.CommandText =
+                $"IF DB_ID(N'{_nombreBaseSqlServer}') IS NOT NULL BEGIN ALTER DATABASE [{_nombreBaseSqlServer}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{_nombreBaseSqlServer}]; END";
+            comando.ExecuteNonQuery();
+        }
+        catch (SqlException)
+        {
+            // La limpieza es de mejor esfuerzo: una base de pruebas huérfana no debe fallar la prueba.
+        }
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
         _connection.Dispose();
+
+        if (UsaSqlServer && disposing)
+        {
+            EliminarBaseSqlServer();
+        }
 
         if (Directory.Exists(RutaAlmacen))
         {

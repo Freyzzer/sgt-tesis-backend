@@ -7,7 +7,21 @@ namespace SGT.Tesis.Infrastructure.Persistence.Repositories;
 
 internal sealed class AuditTrail(AppDbContext db, ICurrentUser actual, IRequestContext solicitud, IClock clock) : IAuditTrail
 {
-    public void Registrar(string accion, string entidad, Guid? entidadId = null, Guid? tesisId = null, string? detalle = null, Guid? actorId = null) =>
+    private DateTime _ultima = DateTime.MinValue;
+
+    public void Registrar(string accion, string entidad, Guid? entidadId = null, Guid? tesisId = null, string? detalle = null, Guid? actorId = null)
+    {
+        // Los eventos de una misma solicitud llevan fechas estrictamente crecientes: así el orden cronológico no
+        // depende del desempate por Id (que en SQL Server no sigue el orden de creación).
+        var ahora = clock.UtcNow;
+
+        if (ahora <= _ultima)
+        {
+            ahora = _ultima.AddTicks(1);
+        }
+
+        _ultima = ahora;
+
         db.RegistrosAuditoria.Add(RegistroAuditoria.Crear(
             accion,
             entidad,
@@ -17,7 +31,8 @@ internal sealed class AuditTrail(AppDbContext db, ICurrentUser actual, IRequestC
             detalle,
             solicitud.Ip,
             solicitud.CorrelationId,
-            clock.UtcNow));
+            ahora));
+    }
 }
 
 internal sealed class AuditoriaRepository(AppDbContext db) : IAuditoriaRepository

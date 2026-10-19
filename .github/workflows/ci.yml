@@ -51,6 +51,47 @@ jobs:
           name: coverage
           path: TestResults/**/*.cobertura.xml
 
+  # Las mismas pruebas de integración, pero contra un SQL Server real (el job anterior usa SQLite en memoria).
+  # Cada prueba crea y elimina su propia base de datos; además se aplican todas las migraciones en una base nueva y
+  # se comprueba que el modelo no tenga cambios sin migrar.
+  pruebas-sql-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # Contraseña de un contenedor efímero que existe solo durante este job; no protege ningún dato real.
+      SA_PASSWORD: Ci-Efimero#2026-Sgt
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: Ci-Efimero#2026-Sgt
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Efimero#2026-Sgt' -Q 'SELECT 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 20s
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore SGT.Tesis.slnx
+
+      - name: Build
+        run: dotnet build SGT.Tesis.slnx --no-restore -c Release
+
+      - name: Pruebas de integración contra SQL Server
+        env:
+          SGT_TEST_SQLSERVER: Server=127.0.0.1,1433;User Id=sa;Password=${{ env.SA_PASSWORD }};TrustServerCertificate=True;Encrypt=True;Connect Timeout=30
+        run: dotnet test --project tests/SGT.Tesis.IntegrationTests --no-build -c Release
+
   # Verifica que las imágenes (API y migraciones) se construyen; no publica nada.
   docker-build:
     runs-on: ubuntu-latest

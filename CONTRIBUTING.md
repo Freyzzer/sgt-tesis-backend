@@ -67,6 +67,10 @@ Ver `docs/git-workflow.pdf`. Resumen:
 dotnet restore
 dotnet build
 dotnet test --solution SGT.Tesis.slnx --coverage --coverage-output-format cobertura
+
+# Pruebas de integración contra SQL Server real (el CI también lo hace): defina antes SGT_TEST_SQLSERVER,
+# ver la sección "Pruebas" del README.
+dotnet test --project tests/SGT.Tesis.IntegrationTests
 dotnet format --verify-no-changes
 dotnet list package --vulnerable --include-transitive
 ```

@@ -110,6 +110,12 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - Rendimiento: la prueba de humo con 10 000 tesis responde en menos de 2 s sobre SQLite en memoria. El objetivo p95 < 800 ms debe medirse contra SQL Server con pruebas de carga (Sprint 8). Si el volumen crece, conviene materializar los promedios.
 - `Etapa.EnRevisionDesde` registra el último envío a revisión (las etapas ya en revisión antes de esta versión usan su fecha de apertura).
 
+## Pruebas contra SQL Server
+
+Las pruebas de integración usan SQLite en memoria salvo que se defina `SGT_TEST_SQLSERVER` (cadena de conexión a un SQL Server con permiso para crear bases de datos). En ese modo cada instancia de la API de prueba crea su base `sgt_test_<guid>` y la elimina al terminar. El job `pruebas-sql-server` del CI lo hace con un contenedor efímero. Una prueba adicional aplica todas las migraciones a una base nueva y verifica tablas, índices únicos filtrados y la ausencia de columnas de texto ilimitadas; otra (también en modo SQLite) falla si el modelo cambia sin su migración.
+
+**Diferencias entre SQLite y SQL Server que ya encontraron un defecto real:** el desempate por `Guid` no sigue el orden de creación en SQL Server; por eso los eventos de auditoría de una misma solicitud llevan fechas estrictamente crecientes.
+
 ## Disponibilidad (health checks)
 
 - `GET /health/live`: el proceso responde (no consulta dependencias).
