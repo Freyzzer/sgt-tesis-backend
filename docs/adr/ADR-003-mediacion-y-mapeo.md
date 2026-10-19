@@ -41,3 +41,28 @@ El proyecto está pensado para entregarse a una institución, por lo que el cump
 ## Cómo revertir
 
 Si el Product Owner confirma que la institución califica para la Community License y prefiere MediatR, se reintroduce el paquete y se reemplazan las interfaces propias; el costo de cambio es bajo porque los handlers no dependen del despachador.
+
+## Anexo — Qué hacían estas librerías y qué alternativas gratuitas existen
+
+### Qué hace cada una (y qué hace hoy el proyecto en su lugar)
+
+| Librería | Qué hace | En este proyecto |
+|---|---|---|
+| **MediatR** | *Mediador* en memoria: el endpoint envía un objeto "comando" o "consulta" y MediatR busca y ejecuta su manejador. Permite además "comportamientos" transversales (validación, logging, transacciones) alrededor de cada manejador. | Los endpoints reciben directamente el manejador por inyección de dependencias (`ICommandHandler<,>`, `IQueryHandler<,>`). La validación se hace en el endpoint (`ValidationFilter`), la auditoría con `IAuditTrail` y la transacción con el `SaveChanges` único de cada caso de uso. |
+| **AutoMapper** | Copia propiedades entre objetos por convención (por ejemplo, de una entidad a un DTO) con un mapeo configurado. | Cada DTO tiene un método estático `Desde(entidad)` escrito a mano. Es explícito, los errores aparecen al compilar y no hay mapeos "mágicos". |
+
+Ambas figuraban en `Readme.md` y en el `.csproj` de Application pero **nunca se usaron en el código**; por eso retirarlas no cambió ningún comportamiento.
+
+### Versiones y alternativas gratuitas (verificado el 2026-10-19 en las preguntas frecuentes del proveedor)
+
+| Opción | Licencia | Comentario |
+|---|---|---|
+| **Implementación propia (la actual)** | Propia, sin costo | Cero dependencias; un poco más de código repetitivo |
+| **MediatR ≤ 12.x** y **AutoMapper ≤ 14.x** | Apache-2.0 / MIT (las versiones anteriores a las comerciales siguen siendo libres) | Gratis sin condiciones, pero **congeladas**: no reciben correcciones de seguridad |
+| **MediatR ≥ 13 / AutoMapper ≥ 15 con licencia Community** | Comercial con plan gratuito | Gratis si la organización factura o tiene presupuesto anual por debajo de 5 M USD; la institución debe confirmar que califica y renovar la clave |
+| **Mediator** (martinothamar, generador de código) | MIT | API muy parecida a MediatR, sin reflexión; mantenida. Verificar la licencia vigente al adoptarla |
+| **Mapperly** (generador de código de mapeos) | Apache-2.0 | Reemplazo moderno de AutoMapper: genera el código al compilar. Verificar la licencia vigente al adoptarla |
+
+**Recomendación:** mantener la implementación propia (no hay necesidad que justifique una dependencia). Si el equipo prefiere una librería, la mejor relación entre mantenimiento y costo es **Mediator + Mapperly**, ambas libres.
+
+El estado de este ADR sigue **Propuesto** hasta que el Arquitecto y el Product Owner lo acepten.

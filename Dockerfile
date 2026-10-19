@@ -47,7 +47,8 @@ USER root
 COPY scripts/db/ /scripts/
 RUN chmod -R a+rX /scripts
 USER mssql
-ENTRYPOINT ["bash", "/scripts/dev-init.sh"]
+# Uso: provision.sh preparar | finalizar | verificar (ver docs/DATABASE_PROVISIONING.md)
+ENTRYPOINT ["bash", "/scripts/provision.sh"]
 
 # ---------------------------------------------------------------------------
 # Imagen de ejecución (la última etapa es la que se construye por defecto)

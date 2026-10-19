@@ -34,14 +34,15 @@ services:
       db:
         condition: service_healthy
     environment:
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env}
-      MIGRATOR_DB_PASSWORD: ${MIGRATOR_DB_PASSWORD:?Defina MIGRATOR_DB_PASSWORD en .env}
+      ADMIN_PASSWORD: ${MSSQL_SA_PASSWORD}
+      APP_PASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env}
+      MIGRATOR_PASSWORD: ${MIGRATOR_DB_PASSWORD:?Defina MIGRATOR_DB_PASSWORD en .env}
       DB_HOST: db
-      DB_NAME: SGTTesis_Dev
+      DB_NAME: ${DB_NAME:-SGTTesis_Dev}
       APP_LOGIN: sgt_app_dev
       MIGRATOR_LOGIN: sgt_migrator_dev
-    command: ["crear"]
+      TRUST_SERVER_CERT: "true"
+    command: ["preparar"]
     restart: "no"
 
   migrator:
@@ -53,7 +54,7 @@ services:
         condition: service_completed_successfully
     command:
       - "--connection"
-      - "Server=db;Database=SGTTesis_Dev;User Id=sgt_migrator_dev;Password=${MIGRATOR_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=30"
+      - "Server=db;Database=${DB_NAME:-SGTTesis_Dev};User Id=sgt_migrator_dev;Password=${MIGRATOR_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=30"
     restart: "no"
 
   # Tras las migraciones: restringe UPDATE/DELETE sobre las tablas inmutables (decisiones y auditoría).
@@ -65,11 +66,13 @@ services:
       migrator:
         condition: service_completed_successfully
     environment:
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      ADMIN_PASSWORD: ${MSSQL_SA_PASSWORD}
       DB_HOST: db
-      DB_NAME: SGTTesis_Dev
+      DB_NAME: ${DB_NAME:-SGTTesis_Dev}
       APP_LOGIN: sgt_app_dev
-    command: ["restringir"]
+      MIGRATOR_LOGIN: sgt_migrator_dev
+      TRUST_SERVER_CERT: "true"
+    command: ["finalizar"]
     restart: "no"
 
   mailpit:
@@ -90,7 +93,7 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=db;Database=SGTTesis_Dev;User Id=sgt_app_dev;Password=${APP_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=15"
+      ConnectionStrings__DefaultConnection: "Server=db;Database=${DB_NAME:-SGTTesis_Dev};User Id=sgt_app_dev;Password=${APP_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=15"
       Jwt__Issuer: sgt-tesis-api
       Jwt__Audience: sgt-tesis-clientes
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?Defina JWT_SIGNING_KEY en .env (32 caracteres o más)}

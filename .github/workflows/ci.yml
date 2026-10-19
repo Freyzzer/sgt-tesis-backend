@@ -78,6 +78,15 @@ jobs:
           cache-from: type=gha,scope=migrator
           cache-to: type=gha,scope=migrator,mode=max
 
+      - name: Imagen de herramientas de base de datos
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: dbtools
+          push: false
+          cache-from: type=gha,scope=dbtools
+          cache-to: type=gha,scope=dbtools,mode=max
+
   # Busca secretos (claves, contraseñas, tokens) en el historial del repositorio.
   secretos:
     runs-on: ubuntu-latest

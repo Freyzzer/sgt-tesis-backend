@@ -74,7 +74,7 @@ Decisiones que tomé donde la especificación no definía la regla. Cada una est
 
 ### Infraestructura y operación
 
-- Crear las instancias de base de datos por ambiente y ejecutar los scripts de `scripts/db` (usuarios de mínimo privilegio y `DENY` de tablas inmutables): cierra **US-16** (AC-16.1 y AC-16.2) en Staging y Producción.
+- Crear las instancias de base de datos por ambiente siguiendo [`DATABASE_PROVISIONING.md`](DATABASE_PROVISIONING.md) (usuarios de mínimo privilegio, migraciones, `DENY` de tablas inmutables y verificación): cierra **US-16** (AC-16.1 y AC-16.2) en Staging y Producción.
 - Elegir la plataforma de despliegue y automatizar el paso a Staging/Producción (hoy el flujo solo publica imágenes en GHCR).
 - Configurar el servidor SMTP real y probarlo.
 - Configurar proxy inverso con TLS, `AllowedHosts`, CORS y `ForwardedHeaders`.
@@ -85,7 +85,7 @@ Decisiones que tomé donde la especificación no definía la regla. Cada una est
 
 Los issues **US-01 a US-15, US-17 y #18–#23** están entregados en `develop`. Quedan abiertos a propósito:
 
-- **#16 (US-16):** los criterios de infraestructura (instancias y usuarios por ambiente) requieren las tareas de la sección 5.
+- **#16 (US-16):** la parte técnica está completa y verificada (`DATABASE_PROVISIONING.md`: script repetible, verificación automática, probado en una base nueva). Falta únicamente que la institución **decida dónde alojar** Staging y Producción y se ejecute el procedimiento en cada uno.
 - **#20 (ADR-003):** la decisión de no usar MediatR/AutoMapper está implementada, pero sigue **propuesta** hasta que el Arquitecto y el Product Owner la validen.
 
 GitHub no cierra los issues al integrar a `develop` (solo al hacerlo en la rama predeterminada, `main`), por eso se cerraron a mano con referencia al PR.

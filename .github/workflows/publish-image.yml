@@ -30,6 +30,9 @@ jobs:
           - nombre: migrator
             target: migrator
             sufijo: "-migrator"
+          - nombre: dbtools
+            target: dbtools
+            sufijo: "-dbtools"
     steps:
       - uses: actions/checkout@v4
 

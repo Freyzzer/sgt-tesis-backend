@@ -44,6 +44,7 @@ Funcionalidad disponible (API REST, `/api/v1`):
 | [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Runbook: despliegue, migraciones, respaldo y restauración, incidentes |
 | [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) | Revisión de seguridad, controles existentes y riesgos residuales |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Base de datos por ambiente, usuarios de mínimo privilegio |
+| [`docs/DATABASE_PROVISIONING.md`](docs/DATABASE_PROVISIONING.md) | Opciones de alojamiento (gratuitas y de pago) y procedimiento para crear cada ambiente |
 | [`docs/adr/`](docs/adr) | Decisiones de arquitectura (ADR-003 mediación y mapeo, ADR-004 identidad) |
 | [`docs/SYSTEM_SPEC_AND_GAP_ANALYSIS.md`](docs/SYSTEM_SPEC_AND_GAP_ANALYSIS.md) | Auditoría inicial del repositorio (histórica) |
 | [`docs/git-workflow.pdf`](docs/git-workflow.pdf) | Guía de ramas, commits y Pull Requests |

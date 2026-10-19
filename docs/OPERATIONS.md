@@ -17,7 +17,7 @@ En producci√≥n se despliega siempre una etiqueta **inmutable** (`X.Y.Z` o `sha-‚
 
 ## 2. Requisitos previos por ambiente
 
-1. **Base de datos** SQL Server dedicada al ambiente (ver `DATABASE.md`), con dos cuentas distintas:
+1. **Base de datos** SQL Server dedicada al ambiente (procedimiento repetible en [`DATABASE_PROVISIONING.md`](DATABASE_PROVISIONING.md); modelo de seguridad en `DATABASE.md`), con dos cuentas distintas:
    - `sgt_app_<ambiente>`: la API; solo `db_datareader` y `db_datawriter` (`scripts/db/01-create-app-user.sql`).
    - `sgt_migrator_<ambiente>`: solo el pipeline; `db_ddladmin` + lectura/escritura (`scripts/db/04-create-migrator-user.sql`).
 2. **Secretos** en el gestor institucional (Key Vault o equivalente), inyectados como variables de entorno: `ConnectionStrings__DefaultConnection`, `Jwt__SigningKey`, `Email__Password`, `Bootstrap__AdminPassword` (solo el primer arranque). Distintos por ambiente.

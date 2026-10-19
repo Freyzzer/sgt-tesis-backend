@@ -1,5 +1,7 @@
 # Base de datos por ambiente (US-16)
 
+> **Para crear un ambiente nuevo** (Staging, Producción u otro) con un procedimiento repetible y verificable, ver [`DATABASE_PROVISIONING.md`](DATABASE_PROVISIONING.md). Este documento describe el modelo de seguridad y la configuración de la conexión.
+
 Motor: **SQL Server** (ADR-002, pendiente de confirmación por el Product Owner).
 
 ## 1. Aislamiento por ambiente
