@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | **Propuesta** (pendiente de validación por el Arquitecto y el Product Owner) |
+| Estado | **Aceptada** el 2026-10-19 por el responsable del proyecto |
 | Fecha | 2026-10-18 |
 | Issue | #20 |
 
@@ -65,4 +65,11 @@ Ambas figuraban en `Readme.md` y en el `.csproj` de Application pero **nunca se 
 
 **Recomendación:** mantener la implementación propia (no hay necesidad que justifique una dependencia). Si el equipo prefiere una librería, la mejor relación entre mantenimiento y costo es **Mediator + Mapperly**, ambas libres.
 
-El estado de este ADR sigue **Propuesto** hasta que el Arquitecto y el Product Owner lo acepten.
+## Cumplimiento automático
+
+La decisión se hace cumplir sin intervención manual:
+
+- `LicenciasTests` (pruebas de arquitectura) falla el build si algún ensamblado referencia MediatR o AutoMapper, o si algún `.csproj` los declara.
+- Dependabot ignora esos dos paquetes para no proponer versiones de licencia comercial.
+
+Antes de pasar a producción se revisan los términos de licencia de las dependencias que sí se usan (ver `docs/PROJECT_STATUS.md`).

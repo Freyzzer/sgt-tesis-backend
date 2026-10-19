@@ -6,6 +6,10 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     target-branch: develop
+    # ADR-003: versiones de licencia comercial; no se usan.
+    ignore:
+      - dependency-name: "MediatR*"
+      - dependency-name: "AutoMapper*"
     groups:
       microsoft:
         patterns:
