@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Domain.Identidad;
 
@@ -51,6 +52,8 @@ internal sealed class AdminBootstrapService(
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var usuario = Usuario.Crear(config.AdminNombres, config.AdminApellidos, config.AdminCorreo, hasher.Hash(config.AdminPassword), Rol.Administrador);
         usuarios.Agregar(usuario);
+        scope.ServiceProvider.GetRequiredService<IAuditTrail>()
+            .Registrar(AccionesAuditoria.AdminInicialCreado, "Usuario", usuario.Id, actorId: usuario.Id);
         await scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SaveChangesAsync(cancellationToken);
 
         logger.LogWarning("Se creó el Administrador inicial {UsuarioId}. Retire las variables Bootstrap__* del entorno.", usuario.Id);

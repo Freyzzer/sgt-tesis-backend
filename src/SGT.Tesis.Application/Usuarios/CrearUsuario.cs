@@ -1,4 +1,5 @@
 using FluentValidation;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.Identidad;
@@ -23,7 +24,8 @@ public sealed class CrearUsuarioHandler(
     IUsuarioRepository usuarios,
     IPasswordHasher hasher,
     ICurrentUser actual,
-    IUnitOfWork unitOfWork) : ICommandHandler<CrearUsuarioCommand, UsuarioDto>
+    IUnitOfWork unitOfWork,
+    IAuditTrail audit) : ICommandHandler<CrearUsuarioCommand, UsuarioDto>
 {
     public async Task<UsuarioDto> HandleAsync(CrearUsuarioCommand command, CancellationToken cancellationToken)
     {
@@ -38,6 +40,7 @@ public sealed class CrearUsuarioHandler(
 
         var usuario = Usuario.Crear(command.Nombres, command.Apellidos, correo, hasher.Hash(command.Password), command.Rol);
         usuarios.Agregar(usuario);
+        audit.Registrar(AccionesAuditoria.UsuarioCreado, "Usuario", usuario.Id, detalle: $"Rol {usuario.Rol}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return UsuarioDto.Desde(usuario);

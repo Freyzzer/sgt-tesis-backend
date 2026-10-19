@@ -72,3 +72,12 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
   - La decisión y el cambio de estado se guardan en la misma transacción. La concurrencia es optimista (`Etapa.Revision`): la segunda de dos decisiones simultáneas recibe 409.
   - Las decisiones son **inmutables**: la aplicación rechaza modificarlas o borrarlas y `scripts/db/03-deny-immutable-tables.sql` lo impide también en la base de datos.
   - La tesis expone su línea de tiempo de decisiones con justificación (la ve el estudiante).
+
+## Auditoría
+
+- `GET /api/v1/auditoria` (solo Administrador) con filtros `tesisId`, `actorId`, `accion` (coincidencia por prefijo, p. ej. `Auth.`), `desde`, `hasta` y paginación (`page`, `pageSize` ≤ 100); orden: más reciente primero.
+- Cada registro guarda actor, acción, entidad, tesis, fecha UTC, IP, identificador de correlación y un detalle breve. Se escribe **en la misma transacción** que el cambio de negocio y es **inmutable** (la aplicación rechaza modificarlo o borrarlo; `scripts/db/03-deny-immutable-tables.sql` lo refuerza en la base de datos).
+- Eventos: `Auth.Login`, `Auth.LoginFallido`, `Auth.LoginRechazado`, `Auth.CuentaBloqueada`, `Auth.RefreshReutilizado`, `Auth.Logout`, `Usuario.Creado/Activado/Desactivado/RolCambiado/AdminInicialCreado`, `Tesis.Registrada`, `Etapa.Enviada`, `Documento.Cargado`, `Evaluador.Asignado/Retirado`, `Veredicto.Emitido` y `Decision.Registrada`.
+- No se guardan contraseñas, tokens ni el correo de intentos con usuarios desconocidos.
+- **Correlación:** cada respuesta incluye `X-Correlation-Id` (se acepta el de la solicitud si es `[A-Za-z0-9_-]{1,64}`, si no se genera uno); también aparece en los logs.
+- No hay política de retención ni archivado de la auditoría (a definir con la institución).

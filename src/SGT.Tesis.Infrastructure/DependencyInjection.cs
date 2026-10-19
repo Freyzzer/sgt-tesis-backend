@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Documentos;
 using SGT.Tesis.Application.Evaluacion;
@@ -61,6 +62,8 @@ public static class DependencyInjection
         services.AddScoped<IAsignacionRepository, AsignacionRepository>();
         services.AddScoped<IVeredictoRepository, VeredictoRepository>();
         services.AddScoped<IDecisionRepository, DecisionRepository>();
+        services.AddScoped<IAuditTrail, AuditTrail>();
+        services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
         services.AddScoped<ITesisRepository, TesisRepository>();
         services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();
         services.AddOptions<DocumentosOptions>().Bind(configuration.GetSection(DocumentosOptions.SectionName)).ValidateOnStart();

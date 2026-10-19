@@ -1,17 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using SGT.Tesis.Domain.Auditoria;
 using SGT.Tesis.Domain.Common;
 using SGT.Tesis.Domain.Decisiones;
 
 namespace SGT.Tesis.Infrastructure.Persistence;
 
 /// <summary>
-/// Las decisiones son inmutables: cualquier intento de actualizarlas o borrarlas se rechaza antes de
+/// Las decisiones y los registros de auditoría son inmutables: cualquier intento de actualizarlas o borrarlas se rechaza antes de
 /// llegar a la base de datos (que además restringe UPDATE/DELETE al usuario de la aplicación).
 /// </summary>
 public sealed class InmutabilidadInterceptor : SaveChangesInterceptor
 {
-    private static readonly Type[] Inmutables = [typeof(Decision)];
+    private static readonly Type[] Inmutables = [typeof(Decision), typeof(RegistroAuditoria)];
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {

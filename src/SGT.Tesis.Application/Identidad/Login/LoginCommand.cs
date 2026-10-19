@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.Identidad.Dtos;
@@ -25,6 +26,7 @@ public sealed class LoginHandler(
     ITokenService tokens,
     IClock clock,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<LoginHandler> logger) : ICommandHandler<LoginCommand, TokenResponse>
 {
     public async Task<TokenResponse> HandleAsync(LoginCommand command, CancellationToken cancellationToken)
@@ -35,18 +37,29 @@ public sealed class LoginHandler(
         if (usuario is null)
         {
             hasher.SimularVerificacion(command.Password); // iguala el tiempo de respuesta cuando el correo no existe
+            audit.Registrar(AccionesAuditoria.LoginFallido, "Usuario", detalle: "Correo no registrado.");
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             throw new NoAutenticadoException();
         }
 
         if (!usuario.Activo || usuario.EstaBloqueado(ahora))
         {
             logger.LogWarning("Intento de acceso rechazado para el usuario {UsuarioId} (inactivo o bloqueado)", usuario.Id);
+            audit.Registrar(AccionesAuditoria.LoginRechazado, "Usuario", usuario.Id, detalle: usuario.Activo ? "Cuenta bloqueada." : "Cuenta inactiva.", actorId: usuario.Id);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             throw new NoAutenticadoException();
         }
 
         if (!hasher.Verify(command.Password, usuario.PasswordHash))
         {
             var bloqueada = usuario.RegistrarFalloDeAcceso(ahora);
+            audit.Registrar(AccionesAuditoria.LoginFallido, "Usuario", usuario.Id, detalle: "Contraseña incorrecta.", actorId: usuario.Id);
+
+            if (bloqueada)
+            {
+                audit.Registrar(AccionesAuditoria.CuentaBloqueada, "Usuario", usuario.Id, detalle: $"Bloqueada hasta {usuario.BloqueadoHasta:O}.", actorId: usuario.Id);
+            }
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             if (bloqueada)
@@ -67,6 +80,7 @@ public sealed class LoginHandler(
         var refresh = tokens.GenerarRefreshToken();
         var expira = ahora.Add(tokens.RefreshTokenLifetime);
         refreshTokens.Agregar(RefreshToken.Crear(usuario.Id, refresh.Hash, expira));
+        audit.Registrar(AccionesAuditoria.Login, "Usuario", usuario.Id, actorId: usuario.Id);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Inicio de sesión del usuario {UsuarioId}", usuario.Id);

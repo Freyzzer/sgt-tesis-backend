@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Domain.Auditoria;
 using SGT.Tesis.Domain.Common;
 using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.Evaluacion;
@@ -21,6 +22,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Veredicto> Veredictos => Set<Veredicto>();
 
     public DbSet<Decision> Decisiones => Set<Decision>();
+
+    public DbSet<RegistroAuditoria> RegistrosAuditoria => Set<RegistroAuditoria>();
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
 

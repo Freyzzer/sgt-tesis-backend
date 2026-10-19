@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
@@ -32,6 +33,7 @@ public sealed class EmitirVeredictoHandler(
     IVeredictoRepository veredictos,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<EmitirVeredictoHandler> logger) : ICommandHandler<EmitirVeredictoCommand, VeredictoDto>
 {
     public async Task<VeredictoDto> HandleAsync(EmitirVeredictoCommand command, CancellationToken cancellationToken)
@@ -59,6 +61,7 @@ public sealed class EmitirVeredictoHandler(
         var version = await veredictos.UltimaVersionAsync(etapa.Id, evaluadorId, cancellationToken) + 1;
         var veredicto = Veredicto.Crear(etapa.Id, evaluadorId, command.Concepto, command.Comentarios, version);
         veredictos.Agregar(veredicto);
+        audit.Registrar(AccionesAuditoria.VeredictoEmitido, "Veredicto", veredicto.Id, encontrada.Id, $"{command.Concepto}, etapa {etapa.Tipo}, v{version}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Veredicto v{Version} ({Concepto}) del evaluador {EvaluadorId} sobre la etapa {Etapa} de la tesis {TesisId}", version, veredicto.Concepto, evaluadorId, etapa.Tipo, encontrada.Id);

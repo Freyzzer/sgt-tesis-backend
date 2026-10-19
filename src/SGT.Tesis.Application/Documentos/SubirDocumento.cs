@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
@@ -28,6 +29,7 @@ public sealed class SubirDocumentoHandler(
     IDocumentosPolicy politica,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<SubirDocumentoHandler> logger) : ICommandHandler<SubirDocumentoCommand, DocumentoDto>
 {
     public async Task<DocumentoDto> HandleAsync(SubirDocumentoCommand command, CancellationToken cancellationToken)
@@ -72,6 +74,7 @@ public sealed class SubirDocumentoHandler(
         try
         {
             documentos.Agregar(documento);
+            audit.Registrar(AccionesAuditoria.DocumentoCargado, "Documento", documento.Id, propia.Id, $"{documento.Categoria} v{version}.");
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
         catch

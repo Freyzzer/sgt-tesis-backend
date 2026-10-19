@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.GestionTesis;
@@ -22,6 +23,7 @@ public sealed class EnviarEtapaARevisionHandler(
     IRequisitosDocumentales requisitos,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<EnviarEtapaARevisionHandler> logger) : ICommandHandler<EnviarEtapaARevisionCommand, TesisDto>
 {
     public async Task<TesisDto> HandleAsync(EnviarEtapaARevisionCommand command, CancellationToken cancellationToken)
@@ -44,6 +46,7 @@ public sealed class EnviarEtapaARevisionHandler(
         }
 
         propia.EnviarEtapaARevision(tipo);
+        audit.Registrar(AccionesAuditoria.EtapaEnviada, "Etapa", etapa.Id, propia.Id, $"Etapa {tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Etapa {Etapa} de la tesis {TesisId} enviada a revisión por {ActorId}", tipo, propia.Id, actual.UserId);

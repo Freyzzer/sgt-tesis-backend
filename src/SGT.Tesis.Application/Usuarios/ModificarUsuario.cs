@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.Identidad;
@@ -13,6 +14,7 @@ public sealed class CambiarEstadoUsuarioHandler(
     ICurrentUser actual,
     IClock clock,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<CambiarEstadoUsuarioHandler> logger) : ICommandHandler<CambiarEstadoUsuarioCommand, UsuarioDto>
 {
     public async Task<UsuarioDto> HandleAsync(CambiarEstadoUsuarioCommand command, CancellationToken cancellationToken)
@@ -50,6 +52,7 @@ public sealed class CambiarEstadoUsuarioHandler(
             }
         }
 
+        audit.Registrar(command.Activo ? AccionesAuditoria.UsuarioActivado : AccionesAuditoria.UsuarioDesactivado, "Usuario", usuario.Id);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Usuario {UsuarioId} {Accion} por {ActorId}", usuario.Id, command.Activo ? "activado" : "desactivado", actual.UserId);
 
@@ -63,6 +66,7 @@ public sealed class CambiarRolUsuarioHandler(
     IUsuarioRepository usuarios,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<CambiarRolUsuarioHandler> logger) : ICommandHandler<CambiarRolUsuarioCommand, UsuarioDto>
 {
     public async Task<UsuarioDto> HandleAsync(CambiarRolUsuarioCommand command, CancellationToken cancellationToken)
@@ -90,6 +94,7 @@ public sealed class CambiarRolUsuarioHandler(
 
         var anterior = usuario.Rol;
         usuario.CambiarRol(command.Rol);
+        audit.Registrar(AccionesAuditoria.UsuarioRolCambiado, "Usuario", usuario.Id, detalle: $"{anterior} -> {usuario.Rol}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Rol del usuario {UsuarioId} cambiado de {Anterior} a {Nuevo} por {ActorId}", usuario.Id, anterior, usuario.Rol, actual.UserId);
 

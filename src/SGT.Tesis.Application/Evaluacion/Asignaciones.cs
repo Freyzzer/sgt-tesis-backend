@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
@@ -28,6 +29,7 @@ public sealed class AsignarEvaluadorHandler(
     ICurrentUser actual,
     IClock clock,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<AsignarEvaluadorHandler> logger) : ICommandHandler<AsignarEvaluadorCommand, AsignacionDto>
 {
     public async Task<AsignacionDto> HandleAsync(AsignarEvaluadorCommand command, CancellationToken cancellationToken)
@@ -58,6 +60,7 @@ public sealed class AsignarEvaluadorHandler(
 
         var asignacion = AsignacionEvaluador.Crear(etapa.Id, evaluador.Id, adminId, clock.UtcNow);
         asignaciones.Agregar(asignacion);
+        audit.Registrar(AccionesAuditoria.EvaluadorAsignado, "Asignacion", asignacion.Id, encontrada.Id, $"Evaluador {evaluador.Id}, etapa {etapa.Tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // La notificación por correo y el registro de auditoría persistente llegan con US-15 y US-12.
@@ -75,6 +78,7 @@ public sealed class RetirarEvaluadorHandler(
     ICurrentUser actual,
     IClock clock,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<RetirarEvaluadorHandler> logger) : ICommandHandler<RetirarEvaluadorCommand, bool>
 {
     public async Task<bool> HandleAsync(RetirarEvaluadorCommand command, CancellationToken cancellationToken)
@@ -89,6 +93,7 @@ public sealed class RetirarEvaluadorHandler(
             ?? throw new NoEncontradoException("El evaluador no tiene una asignación activa en esta etapa.");
 
         asignacion.Retirar(clock.UtcNow);
+        audit.Registrar(AccionesAuditoria.EvaluadorRetirado, "Asignacion", asignacion.Id, encontrada.Id, $"Evaluador {command.EvaluadorId}, etapa {etapa.Tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Evaluador {EvaluadorId} retirado de la etapa {Etapa} de la tesis {TesisId} por {ActorId}", command.EvaluadorId, etapa.Tipo, encontrada.Id, adminId);
 

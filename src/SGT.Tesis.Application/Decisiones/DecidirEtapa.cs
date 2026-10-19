@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
@@ -33,6 +34,7 @@ public sealed class DecidirEtapaHandler(
     ICurrentUser actual,
     IClock clock,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<DecidirEtapaHandler> logger) : ICommandHandler<DecidirEtapaCommand, TesisDto>
 {
     public async Task<TesisDto> HandleAsync(DecidirEtapaCommand command, CancellationToken cancellationToken)
@@ -46,6 +48,7 @@ public sealed class DecidirEtapaHandler(
         var decision = encontrada.Decidir(tipo, command.Resultado, adminId, command.Justificacion, clock.UtcNow);
 
         decisiones.Agregar(decision);
+        audit.Registrar(AccionesAuditoria.DecisionRegistrada, "Decision", decision.Id, encontrada.Id, $"{decision.Resultado} en la etapa {tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(

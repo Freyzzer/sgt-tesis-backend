@@ -32,6 +32,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // El log de peticiones va por fuera del manejador de excepciones para registrar el estado final.
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -60,6 +61,7 @@ app.MapUsuariosEndpoints();
 app.MapTesisEndpoints();
 app.MapDocumentosEndpoints();
 app.MapEvaluacionEndpoints();
+app.MapAuditoriaEndpoints();
 
 app.Run();
 

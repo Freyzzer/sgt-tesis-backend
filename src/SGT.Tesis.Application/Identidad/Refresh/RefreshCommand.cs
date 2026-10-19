@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.Identidad.Dtos;
@@ -23,6 +24,7 @@ public sealed class RefreshHandler(
     ITokenService tokens,
     IClock clock,
     IUnitOfWork unitOfWork,
+    IAuditTrail audit,
     ILogger<RefreshHandler> logger) : ICommandHandler<RefreshCommand, TokenResponse>
 {
     public async Task<TokenResponse> HandleAsync(RefreshCommand command, CancellationToken cancellationToken)
@@ -34,6 +36,7 @@ public sealed class RefreshHandler(
         if (actual.EstaRevocado)
         {
             // Reutilización de un token ya usado: se asume robo y se revoca toda la cadena.
+            audit.Registrar(AccionesAuditoria.RefreshReutilizado, "Usuario", actual.UsuarioId, actorId: actual.UsuarioId);
             await RevocarFamiliaAsync(actual.FamiliaId, ahora, cancellationToken);
             logger.LogWarning("Reutilización de refresh token detectada para el usuario {UsuarioId}; cadena revocada", actual.UsuarioId);
             throw new NoAutenticadoException();

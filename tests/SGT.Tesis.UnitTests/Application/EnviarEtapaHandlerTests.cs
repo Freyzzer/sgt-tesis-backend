@@ -5,6 +5,7 @@ using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
+using SGT.Tesis.UnitTests.Support;
 
 namespace SGT.Tesis.UnitTests.Application;
 
@@ -76,6 +77,7 @@ public class EnviarEtapaHandlerTests
             new Requisitos(faltantes),
             new Actual(estudiante, nameof(Rol.Estudiante)),
             guardado,
+            new AuditoriaEnMemoria(),
             NullLogger<EnviarEtapaARevisionHandler>.Instance);
 
         return (handler, tesis, guardado);

@@ -1,5 +1,5 @@
 /*
-  Refuerza a nivel de base de datos la inmutabilidad de las decisiones (US-11, AC-11.6).
+  Refuerza a nivel de base de datos la inmutabilidad de las decisiones y de la auditoría (US-11 AC-11.6, US-12).
 
   Ejecutar con una cuenta administrativa DESPUÉS de aplicar las migraciones, en cada ambiente:
 
@@ -11,5 +11,6 @@
 EXEC (N'DENY UPDATE, DELETE ON dbo.Decisiones TO [$(AppLogin)];');
 GO
 
--- Cuando exista la tabla de auditoría (US-12):
---   DENY UPDATE, DELETE ON dbo.RegistrosAuditoria TO [$(AppLogin)];
+-- Los registros de auditoría tampoco se pueden alterar ni borrar.
+EXEC (N'DENY UPDATE, DELETE ON dbo.RegistrosAuditoria TO [$(AppLogin)];');
+GO

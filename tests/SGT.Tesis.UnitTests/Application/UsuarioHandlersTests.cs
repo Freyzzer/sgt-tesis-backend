@@ -3,6 +3,7 @@ using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.Usuarios;
 using SGT.Tesis.Domain.Identidad;
+using SGT.Tesis.UnitTests.Support;
 
 namespace SGT.Tesis.UnitTests.Application;
 
@@ -75,7 +76,7 @@ public class UsuarioHandlersTests
     private static Usuario Admin(string correo = "admin@x.edu") => Usuario.Crear("Ad", "Min", correo, "hash", Rol.Administrador);
 
     private static CambiarEstadoUsuarioHandler EstadoHandler(Usuarios usuarios, Tokens tokens, ICurrentUser actual, Guardado? guardado = null) =>
-        new(usuarios, tokens, actual, new Reloj(), guardado ?? new Guardado(), NullLogger<CambiarEstadoUsuarioHandler>.Instance);
+        new(usuarios, tokens, actual, new Reloj(), guardado ?? new Guardado(), new AuditoriaEnMemoria(), NullLogger<CambiarEstadoUsuarioHandler>.Instance);
 
     [Fact]
     [Trait("AC", "3.3")]
@@ -141,6 +142,7 @@ public class UsuarioHandlersTests
             usuarios,
             new Actual(Guid.NewGuid(), nameof(Rol.Administrador)),
             new Guardado(),
+            new AuditoriaEnMemoria(),
             NullLogger<CambiarRolUsuarioHandler>.Instance);
 
         await Assert.ThrowsAsync<ConflictoException>(

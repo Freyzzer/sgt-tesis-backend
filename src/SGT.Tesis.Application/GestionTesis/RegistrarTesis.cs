@@ -1,4 +1,5 @@
 using FluentValidation;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.GestionTesis;
@@ -21,7 +22,8 @@ public sealed class RegistrarTesisHandler(
     ITesisRepository tesis,
     ICurrentUser actual,
     IClock clock,
-    IUnitOfWork unitOfWork) : ICommandHandler<RegistrarTesisCommand, TesisDto>
+    IUnitOfWork unitOfWork,
+    IAuditTrail audit) : ICommandHandler<RegistrarTesisCommand, TesisDto>
 {
     public async Task<TesisDto> HandleAsync(RegistrarTesisCommand command, CancellationToken cancellationToken)
     {
@@ -34,6 +36,7 @@ public sealed class RegistrarTesisHandler(
 
         var nueva = TesisGrado.Crear(studentId, command.Titulo, command.Resumen, clock.UtcNow);
         tesis.Agregar(nueva);
+        audit.Registrar(AccionesAuditoria.TesisRegistrada, "Tesis", nueva.Id, nueva.Id);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return TesisDto.Desde(nueva);

@@ -1,4 +1,5 @@
 using FluentValidation;
+using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 
 namespace SGT.Tesis.Application.Identidad.Logout;
@@ -18,7 +19,8 @@ public sealed class LogoutHandler(
     IRefreshTokenRepository refreshTokens,
     ITokenService tokens,
     IClock clock,
-    IUnitOfWork unitOfWork) : ICommandHandler<LogoutCommand, bool>
+    IUnitOfWork unitOfWork,
+    IAuditTrail audit) : ICommandHandler<LogoutCommand, bool>
 {
     public async Task<bool> HandleAsync(LogoutCommand command, CancellationToken cancellationToken)
     {
@@ -36,6 +38,7 @@ public sealed class LogoutHandler(
             miembro.Revocar(ahora);
         }
 
+        audit.Registrar(AccionesAuditoria.Logout, "Usuario", token.UsuarioId, actorId: token.UsuarioId);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
