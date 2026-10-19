@@ -7,8 +7,7 @@ namespace SGT.Tesis.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Consultas de lectura con proyecciones (sin cargar entidades completas) para el panel del Administrador.
-/// Las cuentas se calculan en la base de datos; solo el promedio de días por etapa se calcula en memoria
-/// sobre dos fechas por etapa cerrada, porque la resta de fechas no es portable entre proveedores.
+/// Las cuentas y el promedio de días se calculan en la base de datos (SQL Server).
 /// </summary>
 internal sealed class ReportesRepository(AppDbContext db) : IReportesRepository
 {
@@ -28,10 +27,7 @@ internal sealed class ReportesRepository(AppDbContext db) : IReportesRepository
             .Select(g => new { Tipo = g.Key, Cantidad = g.Count() })
             .ToListAsync(cancellationToken);
 
-        var cerradas = await db.Etapas.AsNoTracking()
-            .Where(e => e.FechaCierre != null)
-            .Select(e => new { e.Tipo, e.FechaApertura, FechaCierre = e.FechaCierre!.Value })
-            .ToListAsync(cancellationToken);
+        var tiempos = await ObtenerTiemposAsync(cancellationToken);
 
         var decisiones = await db.Decisiones.AsNoTracking()
             .GroupBy(d => d.Resultado)
@@ -76,10 +72,9 @@ internal sealed class ReportesRepository(AppDbContext db) : IReportesRepository
             Enum.GetValues<EtapaTipo>()
                 .Select(t =>
                 {
-                    var delTipo = cerradas.Where(c => c.Tipo == t).ToList();
-                    var promedio = delTipo.Count == 0 ? 0 : Math.Round(delTipo.Average(c => (c.FechaCierre - c.FechaApertura).TotalDays), 1);
+                    var fila = tiempos.FirstOrDefault(x => x.Tipo == t);
 
-                    return new TiempoPorEtapaDto((int)t, t.ToString(), delTipo.Count, promedio);
+                    return new TiempoPorEtapaDto((int)t, t.ToString(), fila?.Cantidad ?? 0, fila?.PromedioDias ?? 0);
                 })
                 .ToList(),
             new DecisionesKpiDto(total, aprobadas, observadas, rechazadas, Tasa(aprobadas), Tasa(observadas), Tasa(rechazadas)),
@@ -94,6 +89,42 @@ internal sealed class ReportesRepository(AppDbContext db) : IReportesRepository
                     g.Count(x => !x.TieneVeredicto)))
                 .OrderByDescending(c => c.VeredictosPendientes).ThenBy(c => c.Nombre)
                 .ToList());
+    }
+
+    private sealed record TiempoEtapa(EtapaTipo Tipo, int Cantidad, double PromedioDias);
+
+    /// <summary>
+    /// Días promedio entre apertura y cierre por tipo de etapa. En SQL Server se calcula en la base de datos con
+    /// DATEDIFF (sin traer filas); en otros proveedores (las pruebas usan SQLite) se calcula en memoria porque la
+    /// resta de fechas no es portable.
+    /// </summary>
+    private async Task<List<TiempoEtapa>> ObtenerTiemposAsync(CancellationToken cancellationToken)
+    {
+        if (db.Database.IsSqlServer())
+        {
+            var agregados = await db.Etapas.AsNoTracking()
+                .Where(e => e.FechaCierre != null)
+                .GroupBy(e => e.Tipo)
+                .Select(g => new
+                {
+                    Tipo = g.Key,
+                    Cantidad = g.Count(),
+                    Minutos = g.Average(e => (double)EF.Functions.DateDiffMinute(e.FechaApertura, e.FechaCierre!.Value)),
+                })
+                .ToListAsync(cancellationToken);
+
+            return agregados.Select(a => new TiempoEtapa(a.Tipo, a.Cantidad, Math.Round(a.Minutos / 1440.0, 1))).ToList();
+        }
+
+        var cerradas = await db.Etapas.AsNoTracking()
+            .Where(e => e.FechaCierre != null)
+            .Select(e => new { e.Tipo, e.FechaApertura, FechaCierre = e.FechaCierre!.Value })
+            .ToListAsync(cancellationToken);
+
+        return cerradas
+            .GroupBy(c => c.Tipo)
+            .Select(g => new TiempoEtapa(g.Key, g.Count(), Math.Round(g.Average(c => (c.FechaCierre - c.FechaApertura).TotalDays), 1)))
+            .ToList();
     }
 
     public async Task<(IReadOnlyList<ItemColaValidacionDto> Items, int Total)> ListarColaAsync(

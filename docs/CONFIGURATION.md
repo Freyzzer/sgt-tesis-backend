@@ -23,6 +23,8 @@ Las claves se leen de `appsettings.json`, `appsettings.<Ambiente>.json` y variab
 | `Email:Host`, `Email:Port`, `Email:UseStartTls`, `Email:User`, `Email:FromAddress`, `Email:FromName` | `Email__Host`… | Con `Smtp` | Servidor SMTP (STARTTLS por defecto, puerto 587). `Host` y `FromAddress` son obligatorios. |
 | `Email:Password` | `Email__Password` | Si el servidor autentica | **Secreto.** Nunca se versiona. |
 | `Email:MaxIntentos`, `Email:EsperaBaseSegundos`, `Email:IntervaloSegundos`, `Email:LoteMaximo`, `Email:WorkerHabilitado` | `Email__…` | No (5, 60, 30, 20, true) | Reintentos con espera exponencial, frecuencia del proceso y tamaño de lote. |
+| `Dashboard:KpisCacheSegundos` | `Dashboard__KpisCacheSegundos` | No (30) | Vigencia en memoria de los KPIs (0 = sin caché; máx. 600). La cola de validación nunca se cachea. |
+| `ForwardedHeaders:Habilitado`, `ForwardedHeaders:RedesConfiables` | `ForwardedHeaders__Habilitado`, `ForwardedHeaders__RedesConfiables__0` | Detrás de un proxy inverso | Con `true` exige las redes (CIDR) del proxy y solo confía en `X-Forwarded-For/Proto` de ellas. Desactivado por defecto. |
 | `Serilog:*` | `Serilog__MinimumLevel__Default` | No | Nivel y destinos de log (consola por defecto). |
 
 ## Comportamiento transversal de la API
@@ -105,3 +107,31 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - Solo Administrador. Se calculan con proyecciones (sin cargar entidades completas); solo el promedio de días se calcula en memoria sobre dos fechas por etapa cerrada.
 - Rendimiento: la prueba de humo con 10 000 tesis responde en menos de 2 s sobre SQLite en memoria. El objetivo p95 < 800 ms debe medirse contra SQL Server con pruebas de carga (Sprint 8). Si el volumen crece, conviene materializar los promedios.
 - `Etapa.EnRevisionDesde` registra el último envío a revisión (las etapas ya en revisión antes de esta versión usan su fecha de apertura).
+
+## Disponibilidad (health checks)
+
+- `GET /health/live`: el proceso responde (no consulta dependencias).
+- `GET /health/ready`: además la **base de datos** responde (tope 5 s) y la carpeta de **archivos** es escribible. Responde `200 {"status":"Healthy"}` o `503 {"status":"Unhealthy"}`; los motivos solo quedan en el log, nunca en la respuesta.
+- La imagen Docker incluye `HEALTHCHECK` (`dotnet SGT.Tesis.API.dll --healthcheck`, sin curl). Si usa `AllowedHosts`, el comprobador envía el primer host configurado.
+- Use `live` para reiniciar el contenedor y `ready` para decidir si recibe tráfico.
+
+## Contenedores
+
+- `Dockerfile` con cuatro destinos: `runtime` (API, usuario sin privilegios, puerto 8080, volumen `/data/documentos`), `migrator` (ejecutable `efbundle` para aplicar migraciones con una cuenta DDL distinta de la de la API), `dbtools` (sqlcmd + `scripts/db`) y la compilación intermedia.
+- `docker-compose.yml` levanta un entorno **local**: SQL Server 2022, creación de la base y de los usuarios de mínimo privilegio, migraciones, protección de las tablas inmutables, la API y Mailpit (correos de prueba en http://localhost:8025). Copie `.env.example` a `.env`, complete los secretos y ejecute `docker compose up --build`. No es una configuración de producción.
+- El puerto local de SQL Server es 14330 (`DB_HOST_PORT`) para no chocar con una instancia instalada en 1433.
+
+## Prueba de carga (k6)
+
+`k6 run -e BASE_URL=… -e ADMIN_CORREO=… -e ADMIN_PASSWORD=… tests/load/dashboard.js` (variables `VUS`, `DURACION`, `PENSAR`). Para 10 000 tesis cargue antes `scripts/load/seed-10000.sql` en una base **desechable**.
+
+Resultado medido el 2026-10-19 contra **SQL Server 2022 en Docker** (portátil, 4 vCPU compartidas con k6 y la API), 10 000 tesis, p95 en ms:
+
+| Escenario | KPIs | Cola de validación |
+|---|---:|---:|
+| Sin caché, 10 usuarios simultáneos | 760 | 336 |
+| Sin caché, 20 usuarios simultáneos | 1 420 | 614 |
+| **Caché 30 s (por defecto), 20 usuarios** | **270** | **597** |
+| Caché 30 s, 50 usuarios | 361 | 797 |
+
+Con un usuario, los KPIs tardan ~120–250 ms. El objetivo p95 < 800 ms (AC-14.3) se cumple hasta ~20 usuarios simultáneos del panel; con 50, la cola queda en el límite. Es una medición en un portátil: repetirla en el hardware real de Staging antes de salir a producción.

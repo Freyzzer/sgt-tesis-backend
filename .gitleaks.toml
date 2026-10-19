@@ -1,0 +1,13 @@
+# Configuración de la búsqueda de secretos (CI: job "secretos").
+title = "SGT-Tesis"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Plantilla de variables con valores de ejemplo (no son credenciales reales)"
+paths = ['''(^|/)\.env\.example$''']
+
+[[allowlists]]
+description = "Cadenas de prueba de la prueba de privacidad de correos (historial de commits; ya renombradas)"
+regexes = ['''TituloSecreto-Quimica-9821''', '''ComentarioSecreto-evaluador-7730''']

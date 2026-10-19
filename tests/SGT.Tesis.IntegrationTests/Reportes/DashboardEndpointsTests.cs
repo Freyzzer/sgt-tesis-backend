@@ -265,6 +265,52 @@ public class DashboardEndpointsTests
         Assert.Equal(0, por45.GetProperty("etapasEstancadas").GetInt32());
     }
 
+    [Fact]
+    [Trait("AC", "14.3")]
+    public async Task Los_kpis_se_conservan_en_cache_el_tiempo_configurado_y_despues_se_recalculan()
+    {
+        using var factory = new ApiFactory();
+        factory.Configuracion["Dashboard:KpisCacheSegundos"] = "30";
+        var inicio = DateTime.UtcNow;
+        factory.Reloj.UtcNow = inicio;
+        await NuevaTesisAsync(factory, enviar: false);
+        using var admin = await factory.ClienteAdministradorAsync();
+
+        var primera = await (await admin.GetAsync(Kpis, TestContext.Current.CancellationToken)).LeerJsonAsync();
+        await NuevaTesisAsync(factory, enviar: false);
+
+        factory.Reloj.UtcNow = inicio.AddSeconds(10);
+        var enCache = await (await admin.GetAsync(Kpis, TestContext.Current.CancellationToken)).LeerJsonAsync();
+
+        factory.Reloj.UtcNow = inicio.AddSeconds(31);
+        var recalculada = await (await admin.GetAsync(Kpis, TestContext.Current.CancellationToken)).LeerJsonAsync();
+
+        Assert.Equal(1, primera.GetProperty("totalTesis").GetInt32());
+        Assert.Equal(1, enCache.GetProperty("totalTesis").GetInt32());
+        Assert.Equal(primera.GetProperty("generadoEn").GetDateTime(), enCache.GetProperty("generadoEn").GetDateTime());
+        Assert.Equal(2, recalculada.GetProperty("totalTesis").GetInt32());
+    }
+
+    [Fact]
+    [Trait("AC", "14.3")]
+    public async Task La_cache_distingue_el_umbral_de_estancamiento_y_la_cola_nunca_se_cachea()
+    {
+        using var factory = new ApiFactory();
+        factory.Configuracion["Dashboard:KpisCacheSegundos"] = "60";
+        var t = await NuevaTesisAsync(factory, enviar: false);
+        using var admin = await factory.ClienteAdministradorAsync();
+
+        var por15 = await (await admin.GetAsync(Kpis, TestContext.Current.CancellationToken)).LeerJsonAsync();
+        var por30 = await (await admin.GetAsync($"{Kpis}?diasEstancamiento=30", TestContext.Current.CancellationToken)).LeerJsonAsync();
+        Assert.Equal(15, por15.GetProperty("diasEstancamiento").GetInt32());
+        Assert.Equal(30, por30.GetProperty("diasEstancamiento").GetInt32());
+
+        // La cola refleja el cambio de inmediato aunque los KPIs sigan en caché.
+        await Enviar(t);
+        var cola = await (await admin.GetAsync(Cola, TestContext.Current.CancellationToken)).LeerJsonAsync();
+        Assert.Equal(1, cola.GetProperty("total").GetInt32());
+    }
+
     [Theory]
     [Trait("AC", "14.3")]
     [InlineData(0)]

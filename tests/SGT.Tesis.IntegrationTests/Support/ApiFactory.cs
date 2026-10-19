@@ -76,6 +76,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Bandeja de correos "enviados" por el outbox durante la prueba.</summary>
     public CorreosCapturados Correos { get; } = new();
 
+    /// <summary>Hace que la base de datos de la API sea inalcanzable (para probar la disponibilidad).</summary>
+    public bool BaseDeDatosInaccesible { get; set; }
+
     public Dictionary<string, string?> Configuracion { get; } = new()
     {
         ["ConnectionStrings:DefaultConnection"] = "Server=(none);Database=pruebas;User ID=sgt_app_test;Password=marcador",
@@ -85,6 +88,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         ["RateLimit:LoginPermitPerMinute"] = "1000",
         ["Cors:AllowedOrigins:0"] = "http://frontend.test",
         ["Documentos:MaxBytes"] = "1048576",
+        ["Dashboard:KpisCacheSegundos"] = "0",
         ["Email:Modo"] = "Log",
         ["Email:WorkerHabilitado"] = "false",
         ["Bootstrap:AdminCorreo"] = AdminCorreo,
@@ -95,6 +99,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         Configuracion["Storage:RootPath"] = RutaAlmacen;
+
+        if (BaseDeDatosInaccesible)
+        {
+            // Sin base de datos tampoco puede crearse el administrador inicial al arrancar.
+            Configuracion["Bootstrap:AdminCorreo"] = null;
+            Configuracion["Bootstrap:AdminPassword"] = null;
+        }
+
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(Configuracion));
 
         builder.ConfigureServices(services =>
@@ -113,11 +125,21 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 esquema.Database.EnsureCreated();
             }
 
-            services.AddDbContext<AppDbContext>((provider, options) => options
-                .UseSqlite(_connection)
-                .AddInterceptors(
+            services.AddDbContext<AppDbContext>((provider, options) =>
+            {
+                if (BaseDeDatosInaccesible)
+                {
+                    options.UseSqlite("Data Source=/no/existe/sgt.db;Mode=ReadOnly");
+                }
+                else
+                {
+                    options.UseSqlite(_connection);
+                }
+
+                options.AddInterceptors(
                     provider.GetRequiredService<AuditoriaInterceptor>(),
-                    provider.GetRequiredService<InmutabilidadInterceptor>()));
+                    provider.GetRequiredService<InmutabilidadInterceptor>());
+            });
         });
     }
 

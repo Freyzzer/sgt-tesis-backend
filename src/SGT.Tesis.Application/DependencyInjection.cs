@@ -11,6 +11,7 @@ public static class DependencyInjection
         var assembly = typeof(ApplicationAssemblyMarker).Assembly;
 
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
+        services.AddSingleton<Reportes.KpisCache>();
 
         var handlers = assembly.GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false })

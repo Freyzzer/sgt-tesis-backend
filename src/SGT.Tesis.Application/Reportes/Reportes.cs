@@ -59,14 +59,58 @@ public sealed class ObtenerKpisQueryValidator : AbstractValidator<ObtenerKpisQue
     }
 }
 
-public sealed class ObtenerKpisHandler(IReportesRepository reportes, ICurrentUser actual, IClock clock)
+/// <summary>Vigencia de los KPIs en caché; cero desactiva la caché.</summary>
+public interface IReportesPolicy
+{
+    TimeSpan KpisCacheTtl { get; }
+}
+
+/// <summary>
+/// Caché en memoria de los KPIs por umbral de estancamiento. Un panel no necesita datos al segundo y el cálculo
+/// recorre todas las tesis; <c>GeneradoEn</c> deja a la vista la antigüedad de lo que se muestra.
+/// </summary>
+public sealed class KpisCache
+{
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, (KpisDto Kpis, DateTime Vence)> _entradas = new();
+
+    public bool TryGet(int diasEstancamiento, DateTime ahora, out KpisDto? kpis)
+    {
+        if (_entradas.TryGetValue(diasEstancamiento, out var entrada) && entrada.Vence > ahora)
+        {
+            kpis = entrada.Kpis;
+            return true;
+        }
+
+        kpis = null;
+        return false;
+    }
+
+    public void Set(int diasEstancamiento, KpisDto kpis, DateTime vence) => _entradas[diasEstancamiento] = (kpis, vence);
+}
+
+public sealed class ObtenerKpisHandler(IReportesRepository reportes, IReportesPolicy politica, KpisCache cache, ICurrentUser actual, IClock clock)
     : IQueryHandler<ObtenerKpisQuery, KpisDto>
 {
-    public Task<KpisDto> HandleAsync(ObtenerKpisQuery query, CancellationToken cancellationToken)
+    public async Task<KpisDto> HandleAsync(ObtenerKpisQuery query, CancellationToken cancellationToken)
     {
         AdministradorRequerido.Exigir(actual);
 
-        return reportes.ObtenerKpisAsync(clock.UtcNow, query.DiasEstancamiento, cancellationToken);
+        var ahora = clock.UtcNow;
+        var ttl = politica.KpisCacheTtl;
+
+        if (ttl > TimeSpan.Zero && cache.TryGet(query.DiasEstancamiento, ahora, out var guardados))
+        {
+            return guardados!;
+        }
+
+        var kpis = await reportes.ObtenerKpisAsync(ahora, query.DiasEstancamiento, cancellationToken);
+
+        if (ttl > TimeSpan.Zero)
+        {
+            cache.Set(query.DiasEstancamiento, kpis, ahora + ttl);
+        }
+
+        return kpis;
     }
 }
 

@@ -18,9 +18,9 @@ namespace SGT.Tesis.IntegrationTests.Notificaciones;
 
 public class NotificacionesTests
 {
-    private const string TituloSecreto = "TituloSecreto-Quimica-9821";
-    private const string JustificacionSecreta = "JustificacionSecreta-metodologia-4417";
-    private const string ComentarioSecreto = "ComentarioSecreto-evaluador-7730";
+    private const string TituloPrivado = "TituloPrivado-Quimica-9821";
+    private const string JustificacionPrivada = "JustificacionPrivada-metodologia-4417";
+    private const string ComentarioPrivado = "ComentarioPrivado-evaluador-7730";
 
     private sealed record Escenario(ApiFactory Factory, Guid TesisId, string CorreoEstudiante, HttpClient Estudiante, HttpClient Admin);
 
@@ -28,7 +28,7 @@ public class NotificacionesTests
     {
         var (_, correo) = await factory.SembrarUsuarioAsync(Rol.Estudiante);
         var estudiante = await factory.ClienteComoAsync(correo);
-        var tesisId = (await (await estudiante.PostAsJsonAsync("/api/v1/tesis", new { titulo = TituloSecreto, resumen = "Resumen" })).LeerJsonAsync()).GetProperty("id").GetGuid();
+        var tesisId = (await (await estudiante.PostAsJsonAsync("/api/v1/tesis", new { titulo = TituloPrivado, resumen = "Resumen" })).LeerJsonAsync()).GetProperty("id").GetGuid();
 
         return new Escenario(factory, tesisId, correo, estudiante, await factory.ClienteAdministradorAsync());
     }
@@ -98,7 +98,7 @@ public class NotificacionesTests
         await ProcesarAsync(factory);
         var antes = factory.Correos.Enviados.Count;
 
-        await e.Admin.PostAsJsonAsync($"{Etapa(e)}/decisiones", new { resultado, justificacion = JustificacionSecreta }, cancellationToken: TestContext.Current.CancellationToken);
+        await e.Admin.PostAsJsonAsync($"{Etapa(e)}/decisiones", new { resultado, justificacion = JustificacionPrivada }, cancellationToken: TestContext.Current.CancellationToken);
         await ProcesarAsync(factory);
 
         var correo = Assert.Single(factory.Correos.Enviados.Skip(antes));
@@ -117,17 +117,17 @@ public class NotificacionesTests
 
         await e.Estudiante.PostAsync($"{Etapa(e)}/enviar", null, TestContext.Current.CancellationToken);
         await e.Admin.PostAsJsonAsync($"{Etapa(e)}/evaluadores", new { evaluadorId }, cancellationToken: TestContext.Current.CancellationToken);
-        await evaluador.PutAsJsonAsync($"{Etapa(e)}/veredicto", new { concepto = "ConObservaciones", comentarios = ComentarioSecreto }, cancellationToken: TestContext.Current.CancellationToken);
-        await e.Admin.PostAsJsonAsync($"{Etapa(e)}/decisiones", new { resultado = "Observada", justificacion = JustificacionSecreta }, cancellationToken: TestContext.Current.CancellationToken);
+        await evaluador.PutAsJsonAsync($"{Etapa(e)}/veredicto", new { concepto = "ConObservaciones", comentarios = ComentarioPrivado }, cancellationToken: TestContext.Current.CancellationToken);
+        await e.Admin.PostAsJsonAsync($"{Etapa(e)}/decisiones", new { resultado = "Observada", justificacion = JustificacionPrivada }, cancellationToken: TestContext.Current.CancellationToken);
         await ProcesarAsync(factory);
 
         Assert.NotEmpty(factory.Correos.Enviados);
         Assert.All(factory.Correos.Enviados, c =>
         {
             var texto = $"{c.Asunto}\n{c.Cuerpo}";
-            Assert.DoesNotContain(TituloSecreto, texto);
-            Assert.DoesNotContain(JustificacionSecreta, texto);
-            Assert.DoesNotContain(ComentarioSecreto, texto);
+            Assert.DoesNotContain(TituloPrivado, texto);
+            Assert.DoesNotContain(JustificacionPrivada, texto);
+            Assert.DoesNotContain(ComentarioPrivado, texto);
             Assert.DoesNotContain("Ana", texto);
             Assert.DoesNotContain("Pérez", texto);
         });

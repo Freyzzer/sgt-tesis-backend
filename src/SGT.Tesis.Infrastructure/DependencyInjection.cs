@@ -14,6 +14,7 @@ using SGT.Tesis.Infrastructure.Identity;
 using SGT.Tesis.Infrastructure.Notificaciones;
 using SGT.Tesis.Infrastructure.Persistence;
 using SGT.Tesis.Infrastructure.Persistence.Repositories;
+using SGT.Tesis.Infrastructure.Reportes;
 
 namespace SGT.Tesis.Infrastructure;
 
@@ -67,6 +68,8 @@ public static class DependencyInjection
         services.AddScoped<IDecisionRepository, DecisionRepository>();
         services.AddScoped<IAuditTrail, AuditTrail>();
         services.AddScoped<IReportesRepository, ReportesRepository>();
+        services.AddOptions<DashboardOptions>().Bind(configuration.GetSection(DashboardOptions.SectionName));
+        services.AddSingleton<IReportesPolicy, DashboardPolicy>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
         services.AddScoped<ITesisRepository, TesisRepository>();
         services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();
