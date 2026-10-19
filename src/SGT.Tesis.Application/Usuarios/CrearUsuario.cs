@@ -38,7 +38,7 @@ public sealed class CrearUsuarioHandler(
             throw new ConflictoException("Ya existe un usuario con ese correo.");
         }
 
-        var usuario = Usuario.Crear(command.Nombres, command.Apellidos, correo, hasher.Hash(command.Password), command.Rol);
+        var usuario = Usuario.Crear(command.Nombres, command.Apellidos, correo, hasher.Hash(command.Password), command.Rol, debeCambiarPassword: true);
         usuarios.Agregar(usuario);
         audit.Registrar(AccionesAuditoria.UsuarioCreado, "Usuario", usuario.Id, detalle: $"Rol {usuario.Rol}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);

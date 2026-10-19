@@ -16,6 +16,9 @@ public static class AccionesAuditoria
     public const string CuentaBloqueada = "Auth.CuentaBloqueada";
     public const string RefreshReutilizado = "Auth.RefreshReutilizado";
     public const string Logout = "Auth.Logout";
+    public const string PasswordCambiada = "Auth.PasswordCambiada";
+    public const string PasswordRestablecimientoSolicitado = "Auth.PasswordRestablecimientoSolicitado";
+    public const string PasswordRestablecida = "Auth.PasswordRestablecida";
     public const string UsuarioCreado = "Usuario.Creado";
     public const string UsuarioActivado = "Usuario.Activado";
     public const string UsuarioDesactivado = "Usuario.Desactivado";

@@ -17,6 +17,7 @@ internal sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(Usuario.PasswordHashMaxLength);
         builder.Property(u => u.Rol).IsRequired().HasConversion<int>();
         builder.Property(u => u.Activo).IsRequired();
+        builder.Property(u => u.DebeCambiarPassword).IsRequired();
 
         builder.HasIndex(u => u.Correo).IsUnique();
     }

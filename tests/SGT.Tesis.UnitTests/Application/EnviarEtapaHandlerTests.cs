@@ -54,7 +54,7 @@ public class EnviarEtapaHandlerTests
     {
         public List<(string Destinatario, string Asunto, string Cuerpo)> Encolados { get; } = [];
 
-        public void Encolar(string destinatario, string asunto, string cuerpo) => Encolados.Add((destinatario, asunto, cuerpo));
+        public void Encolar(string destinatario, string asunto, string cuerpo, bool sensible = false) => Encolados.Add((destinatario, asunto, cuerpo));
     }
 
     private sealed class Administradores : IUsuarioRepository

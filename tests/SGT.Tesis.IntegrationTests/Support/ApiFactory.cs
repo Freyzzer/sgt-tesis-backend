@@ -93,6 +93,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         ["Email:WorkerHabilitado"] = "false",
         ["Bootstrap:AdminCorreo"] = AdminCorreo,
         ["Bootstrap:AdminPassword"] = AdminPassword,
+        ["Bootstrap:ExigirCambioPassword"] = "false",
     };
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

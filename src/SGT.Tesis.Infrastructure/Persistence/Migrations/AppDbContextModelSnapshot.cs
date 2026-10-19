@@ -373,6 +373,47 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                     b.ToTable("Tesis", (string)null);
                 });
 
+            modelBuilder.Entity("SGT.Tesis.Domain.Identidad.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpiraEn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UsadoEn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("PasswordResetTokens", (string)null);
+                });
+
             modelBuilder.Entity("SGT.Tesis.Domain.Identidad.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -449,6 +490,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("DebeCambiarPassword")
+                        .HasColumnType("bit");
+
                     b.Property<int>("IntentosFallidos")
                         .HasColumnType("int");
 
@@ -517,6 +561,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("ProximoIntentoEn")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("Sensible")
+                        .HasColumnType("bit");
+
                     b.Property<string>("UltimoError")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -576,6 +623,15 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                         .WithMany("Etapas")
                         .HasForeignKey("TesisId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.Identidad.PasswordResetToken", b =>
+                {
+                    b.HasOne("SGT.Tesis.Domain.Identidad.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

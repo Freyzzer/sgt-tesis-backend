@@ -43,7 +43,12 @@ public sealed class NotificacionPendiente : BaseEntity
 
     public string? UltimoError { get; private set; }
 
-    public static NotificacionPendiente Crear(string? destinatario, string? asunto, string? cuerpo, DateTime utcNow)
+    /// <summary>El cuerpo contiene un secreto: se borra al enviarse o al agotar los intentos.</summary>
+    public bool Sensible { get; private set; }
+
+    public const string CuerpoDepurado = "[Contenido sensible eliminado]";
+
+    public static NotificacionPendiente Crear(string? destinatario, string? asunto, string? cuerpo, DateTime utcNow, bool sensible = false)
     {
         var correo = Guard.Required(destinatario, DestinatarioMaxLength, nameof(Destinatario));
 
@@ -59,6 +64,7 @@ public sealed class NotificacionPendiente : BaseEntity
             Cuerpo = Guard.Required(cuerpo, CuerpoMaxLength, nameof(Cuerpo)),
             Estado = EstadoNotificacion.Pendiente,
             ProximoIntentoEn = utcNow,
+            Sensible = sensible,
         };
     }
 
@@ -69,6 +75,15 @@ public sealed class NotificacionPendiente : BaseEntity
         Estado = EstadoNotificacion.Enviada;
         EnviadaEn = utcNow;
         UltimoError = null;
+        Depurar();
+    }
+
+    private void Depurar()
+    {
+        if (Sensible)
+        {
+            Cuerpo = CuerpoDepurado;
+        }
     }
 
     /// <summary>Registra un fallo y programa el reintento con espera exponencial; tras agotar los intentos queda Fallida.</summary>
@@ -81,6 +96,7 @@ public sealed class NotificacionPendiente : BaseEntity
         if (Intentos >= maxIntentos)
         {
             Estado = EstadoNotificacion.Fallida;
+            Depurar();
             return;
         }
 

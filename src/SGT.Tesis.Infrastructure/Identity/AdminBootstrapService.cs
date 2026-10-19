@@ -20,6 +20,9 @@ public sealed class BootstrapOptions
     public string AdminNombres { get; set; } = "Administrador";
 
     public string AdminApellidos { get; set; } = "Inicial";
+
+    /// <summary>Exige cambiar la contraseña inicial en el primer acceso (por defecto sí).</summary>
+    public bool ExigirCambioPassword { get; set; } = true;
 }
 
 /// <summary>
@@ -50,7 +53,7 @@ internal sealed class AdminBootstrapService(
         }
 
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        var usuario = Usuario.Crear(config.AdminNombres, config.AdminApellidos, config.AdminCorreo, hasher.Hash(config.AdminPassword), Rol.Administrador);
+        var usuario = Usuario.Crear(config.AdminNombres, config.AdminApellidos, config.AdminCorreo, hasher.Hash(config.AdminPassword), Rol.Administrador, config.ExigirCambioPassword);
         usuarios.Agregar(usuario);
         scope.ServiceProvider.GetRequiredService<IAuditTrail>()
             .Registrar(AccionesAuditoria.AdminInicialCreado, "Usuario", usuario.Id, actorId: usuario.Id);

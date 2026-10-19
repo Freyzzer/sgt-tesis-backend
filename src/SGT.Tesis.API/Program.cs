@@ -91,6 +91,7 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
+app.UseMiddleware<CambioPasswordObligatorioMiddleware>();
 app.UseAuthorization();
 
 // Liveness: el proceso responde. Readiness: además la base de datos y el almacenamiento están disponibles.

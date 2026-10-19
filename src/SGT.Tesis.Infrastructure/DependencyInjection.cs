@@ -63,6 +63,10 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+        services.AddSingleton<IValidateOptions<FrontendOptions>, FrontendOptionsValidator>();
+        services.AddOptions<FrontendOptions>().Bind(configuration.GetSection(FrontendOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IAppLinks, AppLinks>();
         services.AddScoped<IAsignacionRepository, AsignacionRepository>();
         services.AddScoped<IVeredictoRepository, VeredictoRepository>();
         services.AddScoped<IDecisionRepository, DecisionRepository>();

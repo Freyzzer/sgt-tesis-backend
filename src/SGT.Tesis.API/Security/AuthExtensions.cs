@@ -66,6 +66,11 @@ public static class AuthExtensions
                         {
                             context.Fail("Sesión no vigente.");
                         }
+                        else if (usuario.DebeCambiarPassword && context.Principal?.Identity is System.Security.Claims.ClaimsIdentity identidad)
+                        {
+                            // La contraseña es temporal: el middleware limita la API hasta que la cambie.
+                            identidad.AddClaim(new System.Security.Claims.Claim(CambioPasswordObligatorioMiddleware.ClaimPendiente, "1"));
+                        }
                     },
                 };
             });

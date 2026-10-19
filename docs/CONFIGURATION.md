@@ -25,6 +25,8 @@ Las claves se leen de `appsettings.json`, `appsettings.<Ambiente>.json` y variab
 | `Email:MaxIntentos`, `Email:EsperaBaseSegundos`, `Email:IntervaloSegundos`, `Email:LoteMaximo`, `Email:WorkerHabilitado` | `Email__…` | No (5, 60, 30, 20, true) | Reintentos con espera exponencial, frecuencia del proceso y tamaño de lote. |
 | `Dashboard:KpisCacheSegundos` | `Dashboard__KpisCacheSegundos` | No (30) | Vigencia en memoria de los KPIs (0 = sin caché; máx. 600). La cola de validación nunca se cachea. |
 | `ForwardedHeaders:Habilitado`, `ForwardedHeaders:RedesConfiables` | `ForwardedHeaders__Habilitado`, `ForwardedHeaders__RedesConfiables__0` | Detrás de un proxy inverso | Con `true` exige las redes (CIDR) del proxy y solo confía en `X-Forwarded-For/Proto` de ellas. Desactivado por defecto. |
+| `Frontend:UrlRestablecerPassword` | `Frontend__UrlRestablecerPassword` | Recomendada | Plantilla de la pantalla de restablecimiento, con `{token}` (p. ej. `https://app.institucion.edu/restablecer?token={token}`). Vacía: el correo incluye solo el código. Debe ser http(s) absoluta. |
+| `Bootstrap:ExigirCambioPassword` | `Bootstrap__ExigirCambioPassword` | No (true) | Obliga al Administrador inicial a cambiar la contraseña en su primer acceso. |
 | `Serilog:*` | `Serilog__MinimumLevel__Default` | No | Nivel y destinos de log (consola por defecto). |
 
 ## Comportamiento transversal de la API
@@ -135,3 +137,16 @@ Resultado medido el 2026-10-19 contra **SQL Server 2022 en Docker** (portátil, 
 | Caché 30 s, 50 usuarios | 361 | 797 |
 
 Con un usuario, los KPIs tardan ~120–250 ms. El objetivo p95 < 800 ms (AC-14.3) se cumple hasta ~20 usuarios simultáneos del panel; con 50, la cola queda en el límite. Es una medición en un portátil: repetirla en el hardware real de Staging antes de salir a producción.
+
+## Cambio y recuperación de contraseña
+
+| Endpoint | Acceso | Qué hace |
+|---|---|---|
+| `POST /api/v1/auth/cambiar-password` `{passwordActual, passwordNueva}` | Sesión iniciada | Verifica la actual (con el mismo bloqueo por intentos fallidos que el login), exige la política de contraseña y que la nueva sea distinta, **cierra todas las sesiones** y avisa por correo. 204; el cliente debe iniciar sesión de nuevo. |
+| `POST /api/v1/auth/olvide-password` `{correo}` | Anónimo (con límite de solicitudes) | Envía un enlace (o código) de un solo uso. Responde **202 siempre**, exista o no la cuenta. Máximo una solicitud por minuto y cuenta; un enlace nuevo invalida el anterior. |
+| `POST /api/v1/auth/restablecer-password` `{token, passwordNueva}` | Anónimo (con límite de solicitudes) | Cambia la contraseña con el token, levanta bloqueos, cierra todas las sesiones y avisa por correo. Token inválido, vencido o ya usado: 400 genérico. |
+
+- **Token:** 48 bytes aleatorios; solo se guarda su **hash**; vence a los **30 minutos** y es de **un solo uso**. El correo que lo contiene se marca como *sensible*: su cuerpo se **borra de la base de datos** al enviarse (o al agotar los intentos).
+- **Contraseña temporal:** las cuentas creadas por el Administrador (y el Administrador inicial, salvo `Bootstrap:ExigirCambioPassword=false`) tienen `DebeCambiarPassword`. El login lo indica (`debeCambiarPassword: true`) y mientras dure **toda la API responde 403** con `codigo: "cambio_password_obligatorio"`, salvo `cambiar-password` y `logout`.
+- Eventos de auditoría: `Auth.PasswordCambiada`, `Auth.PasswordRestablecimientoSolicitado` y `Auth.PasswordRestablecida`.
+- Sin `Frontend:UrlRestablecerPassword` el correo trae el código en texto: aceptable en desarrollo, pero en producción conviene el enlace al frontend.

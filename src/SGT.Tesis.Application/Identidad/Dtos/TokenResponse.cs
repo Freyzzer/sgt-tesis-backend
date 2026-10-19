@@ -5,4 +5,5 @@ public sealed record TokenResponse(
     DateTime AccessTokenExpiraEn,
     string RefreshToken,
     DateTime RefreshTokenExpiraEn,
-    string TipoToken = "Bearer");
+    string TipoToken = "Bearer",
+    bool DebeCambiarPassword = false);

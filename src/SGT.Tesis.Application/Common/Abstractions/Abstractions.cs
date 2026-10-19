@@ -52,6 +52,11 @@ public interface ITokenService
     RefreshTokenGenerado GenerarRefreshToken();
 
     string HashRefreshToken(string refreshToken);
+
+    /// <summary>Token aleatorio de un solo uso (restablecimiento de contraseña); solo se guarda su hash.</summary>
+    RefreshTokenGenerado GenerarTokenOpaco();
+
+    string HashTokenOpaco(string token);
 }
 
 public interface IUsuarioRepository
@@ -71,6 +76,15 @@ public interface IUsuarioRepository
     Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(int page, int pageSize, Rol? rol, bool? activo, CancellationToken cancellationToken);
 
     void Agregar(Usuario usuario);
+}
+
+public interface IPasswordResetRepository
+{
+    Task<PasswordResetToken?> ObtenerPorHashAsync(string hash, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<PasswordResetToken>> ObtenerVigentesDeUsuarioAsync(Guid usuarioId, DateTime utcNow, CancellationToken cancellationToken);
+
+    void Agregar(PasswordResetToken token);
 }
 
 public interface IRefreshTokenRepository

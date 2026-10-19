@@ -85,6 +85,6 @@ public sealed class LoginHandler(
 
         logger.LogInformation("Inicio de sesión del usuario {UsuarioId}", usuario.Id);
 
-        return new TokenResponse(access.Valor, access.ExpiraEn, refresh.Valor, expira);
+        return new TokenResponse(access.Valor, access.ExpiraEn, refresh.Valor, expira, DebeCambiarPassword: usuario.DebeCambiarPassword);
     }
 }

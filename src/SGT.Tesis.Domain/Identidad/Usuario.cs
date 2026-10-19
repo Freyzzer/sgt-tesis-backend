@@ -35,6 +35,9 @@ public sealed class Usuario : BaseEntity
 
     public bool Activo { get; private set; }
 
+    /// <summary>La contraseña actual es temporal (la definió un administrador): debe cambiarla antes de usar el sistema.</summary>
+    public bool DebeCambiarPassword { get; private set; }
+
     public int IntentosFallidos { get; private set; }
 
     public DateTime? BloqueadoHasta { get; private set; }
@@ -42,7 +45,7 @@ public sealed class Usuario : BaseEntity
     public static string NormalizarCorreo(string? correo) =>
         Guard.Required(correo, CorreoMaxLength, nameof(Correo)).ToLowerInvariant();
 
-    public static Usuario Crear(string? nombres, string? apellidos, string? correo, string passwordHash, Rol rol)
+    public static Usuario Crear(string? nombres, string? apellidos, string? correo, string passwordHash, Rol rol, bool debeCambiarPassword = false)
     {
         if (!Enum.IsDefined(rol))
         {
@@ -64,6 +67,7 @@ public sealed class Usuario : BaseEntity
             PasswordHash = Guard.Required(passwordHash, PasswordHashMaxLength, nameof(PasswordHash)),
             Rol = rol,
             Activo = true,
+            DebeCambiarPassword = debeCambiarPassword,
         };
     }
 
@@ -89,6 +93,15 @@ public sealed class Usuario : BaseEntity
         BloqueadoHasta = utcNow.Add(DuracionBloqueo);
         IntentosFallidos = 0;
         return true;
+    }
+
+    /// <summary>Establece una contraseña nueva elegida por la persona: levanta el cambio obligatorio y el bloqueo.</summary>
+    public void CambiarPassword(string nuevoPasswordHash)
+    {
+        PasswordHash = Guard.Required(nuevoPasswordHash, PasswordHashMaxLength, nameof(PasswordHash));
+        DebeCambiarPassword = false;
+        IntentosFallidos = 0;
+        BloqueadoHasta = null;
     }
 
     public void RegistrarAccesoExitoso()

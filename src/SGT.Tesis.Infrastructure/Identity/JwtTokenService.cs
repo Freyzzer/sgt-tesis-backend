@@ -39,12 +39,16 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, IClock clock
         return new AccessToken(new JsonWebTokenHandler().CreateToken(descriptor), expira);
     }
 
-    public RefreshTokenGenerado GenerarRefreshToken()
+    public RefreshTokenGenerado GenerarRefreshToken() => GenerarTokenOpaco();
+
+    public RefreshTokenGenerado GenerarTokenOpaco()
     {
         var valor = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(48));
-        return new RefreshTokenGenerado(valor, HashRefreshToken(valor));
+        return new RefreshTokenGenerado(valor, HashTokenOpaco(valor));
     }
 
-    public string HashRefreshToken(string refreshToken) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken)));
+    public string HashRefreshToken(string refreshToken) => HashTokenOpaco(refreshToken);
+
+    public string HashTokenOpaco(string token) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

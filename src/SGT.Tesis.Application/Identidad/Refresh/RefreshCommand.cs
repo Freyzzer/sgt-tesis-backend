@@ -64,7 +64,7 @@ public sealed class RefreshHandler(
         refreshTokens.Agregar(siguiente);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new TokenResponse(access.Valor, access.ExpiraEn, nuevo.Valor, expira);
+        return new TokenResponse(access.Valor, access.ExpiraEn, nuevo.Valor, expira, DebeCambiarPassword: usuario.DebeCambiarPassword);
     }
 
     private async Task RevocarFamiliaAsync(Guid familiaId, DateTime ahora, CancellationToken cancellationToken)

@@ -153,8 +153,8 @@ internal sealed class SmtpEmailSender(IOptions<EmailOptions> options) : IEmailSe
 
 internal sealed class Notificador(AppDbContext db, IClock clock) : INotificador
 {
-    public void Encolar(string destinatario, string asunto, string cuerpo) =>
-        db.Notificaciones.Add(NotificacionPendiente.Crear(destinatario, asunto, cuerpo, clock.UtcNow));
+    public void Encolar(string destinatario, string asunto, string cuerpo, bool sensible = false) =>
+        db.Notificaciones.Add(NotificacionPendiente.Crear(destinatario, asunto, cuerpo, clock.UtcNow, sensible));
 }
 
 /// <summary>Envía las notificaciones vencidas del outbox; los fallos se reintentan con espera exponencial.</summary>
