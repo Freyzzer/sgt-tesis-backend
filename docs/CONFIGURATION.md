@@ -61,3 +61,14 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - Solo se admiten documentos mientras la etapa está Pendiente u Observada (en revisión, aprobada o rechazada → 409).
 - Descarga con `Content-Disposition: attachment` y `X-Content-Type-Options: nosniff`; la ven el dueño y el Administrador (los evaluadores asignados, con US-09).
 - No hay antivirus; si la institución lo exige, se integra detrás de `IFileStorage` antes de guardar.
+
+## Evaluación y decisiones
+
+- **Asignaciones** (solo Administrador): `POST|GET /api/v1/tesis/{id}/etapas/{n}/evaluadores` y `DELETE .../evaluadores/{evaluadorId}`. El asignado debe ser un Evaluador activo; una asignación activa por evaluador y etapa (índice único filtrado). Al asignar, el evaluador ve la tesis y sus documentos; al retirarlo, deja de verlos.
+- **Veredictos** (solo el Evaluador asignado, con la etapa en revisión): `PUT .../etapas/{n}/veredicto` crea una **versión nueva** y conserva las anteriores; `GET .../veredictos[?soloVigentes=true]` (el Administrador ve todos; cada Evaluador, los suyos). Un veredicto **nunca** cambia el estado de la etapa.
+- **Decisiones** (solo Administrador): `POST .../etapas/{n}/decisiones` con `Aprobada`, `Observada` o `Rechazada`.
+  - Solo desde `EnRevision` y sobre la etapa actual; observar y rechazar exigen justificación (≤ 2000).
+  - `Aprobada` abre la etapa siguiente en `Pendiente`; tras la 7.ª la tesis queda `Finalizada`. `Observada` devuelve la etapa al estudiante, que corrige y reenvía. `Rechazada` rechaza la tesis (el estudiante puede registrar otra).
+  - La decisión y el cambio de estado se guardan en la misma transacción. La concurrencia es optimista (`Etapa.Revision`): la segunda de dos decisiones simultáneas recibe 409.
+  - Las decisiones son **inmutables**: la aplicación rechaza modificarlas o borrarlas y `scripts/db/03-deny-immutable-tables.sql` lo impide también en la base de datos.
+  - La tesis expone su línea de tiempo de decisiones con justificación (la ve el estudiante).

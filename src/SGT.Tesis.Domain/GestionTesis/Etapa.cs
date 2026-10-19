@@ -1,4 +1,5 @@
 using SGT.Tesis.Domain.Common;
+using SGT.Tesis.Domain.Decisiones;
 
 namespace SGT.Tesis.Domain.GestionTesis;
 
@@ -18,6 +19,9 @@ public sealed class Etapa : BaseEntity
     public DateTime FechaApertura { get; private set; }
 
     public DateTime? FechaCierre { get; private set; }
+
+    /// <summary>Contador de cambios de estado; se usa como token de concurrencia optimista.</summary>
+    public int Revision { get; private set; }
 
     /// <summary>Una etapa está abierta mientras no haya sido aprobada ni rechazada.</summary>
     public bool EstaAbierta => Estado is EstadoEtapa.Pendiente or EstadoEtapa.EnRevision or EstadoEtapa.Observado;
@@ -44,5 +48,32 @@ public sealed class Etapa : BaseEntity
         }
 
         Estado = EstadoEtapa.EnRevision;
+        Revision++;
+    }
+
+    /// <summary>EnRevision → Aprobado, Observado o Rechazado, según la decisión del Administrador.</summary>
+    internal void Resolver(ResultadoDecision resultado, DateTime utcNow)
+    {
+        if (Estado != EstadoEtapa.EnRevision)
+        {
+            throw new TransicionInvalidaException(Estado is EstadoEtapa.Aprobado or EstadoEtapa.Rechazado
+                ? $"La etapa ya está {Estado}."
+                : "Solo se puede decidir sobre una etapa que está en revisión.");
+        }
+
+        Estado = resultado switch
+        {
+            ResultadoDecision.Aprobada => EstadoEtapa.Aprobado,
+            ResultadoDecision.Observada => EstadoEtapa.Observado,
+            ResultadoDecision.Rechazada => EstadoEtapa.Rechazado,
+            _ => throw new DomainException("El resultado de la decisión no es válido."),
+        };
+
+        if (Estado is EstadoEtapa.Aprobado or EstadoEtapa.Rechazado)
+        {
+            FechaCierre = utcNow;
+        }
+
+        Revision++;
     }
 }

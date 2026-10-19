@@ -68,7 +68,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<AppDbContext>((provider, options) => options
                 .UseSqlite(_connection)
-                .AddInterceptors(provider.GetRequiredService<AuditoriaInterceptor>()));
+                .AddInterceptors(
+                    provider.GetRequiredService<AuditoriaInterceptor>(),
+                    provider.GetRequiredService<InmutabilidadInterceptor>()));
         });
     }
 

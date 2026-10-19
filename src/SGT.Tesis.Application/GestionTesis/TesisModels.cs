@@ -1,5 +1,7 @@
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.Evaluacion;
+using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
 
@@ -10,6 +12,17 @@ public sealed record EtapaDto(Guid Id, string Tipo, int Numero, string Estado, D
     public static EtapaDto Desde(Etapa e) => new(e.Id, e.Tipo.ToString(), (int)e.Tipo, e.Estado.ToString(), e.FechaApertura, e.FechaCierre);
 }
 
+public sealed record DecisionDto(Guid Id, int Etapa, string Resultado, string? Justificacion, Guid AdministradorId, DateTime FechaUtc)
+{
+    public static DecisionDto Desde(Decision d, TesisGrado tesis) => new(
+        d.Id,
+        (int)tesis.Etapas.First(e => e.Id == d.EtapaId).Tipo,
+        d.Resultado.ToString(),
+        d.Justificacion,
+        d.AdministradorId,
+        d.FechaUtc);
+}
+
 public sealed record TesisDto(
     Guid Id,
     Guid StudentId,
@@ -17,19 +30,21 @@ public sealed record TesisDto(
     string Resumen,
     string Estado,
     EtapaDto EtapaActual,
-    IReadOnlyList<EtapaDto> Etapas)
+    IReadOnlyList<EtapaDto> Etapas,
+    IReadOnlyList<DecisionDto> Decisiones)
 {
-    public static TesisDto Desde(TesisGrado t) => new(
+    public static TesisDto Desde(TesisGrado t, IEnumerable<Decision>? decisiones = null) => new(
         t.Id,
         t.StudentId,
         t.Titulo,
         t.Resumen,
         t.Estado.ToString(),
         EtapaDto.Desde(t.EtapaActual),
-        t.Etapas.OrderBy(e => e.Tipo).Select(EtapaDto.Desde).ToList());
+        t.Etapas.OrderBy(e => e.Tipo).Select(EtapaDto.Desde).ToList(),
+        (decisiones ?? []).OrderBy(d => d.FechaUtc).Select(d => DecisionDto.Desde(d, t)).ToList());
 }
 
-/// <summary>Requisitos documentales de cada etapa (se completa con la carga de documentos, US-07).</summary>
+/// <summary>Requisitos documentales de cada etapa (ver <c>Documentos:Requisitos</c>).</summary>
 public interface IRequisitosDocumentales
 {
     /// <summary>Nombres de los documentos obligatorios que aún no se han cargado para la etapa.</summary>
@@ -49,6 +64,13 @@ public interface ITesisRepository
     void Agregar(TesisGrado tesis);
 }
 
+public interface IDecisionRepository
+{
+    Task<IReadOnlyList<Decision>> ListarPorTesisAsync(Guid tesisId, CancellationToken cancellationToken);
+
+    void Agregar(Decision decision);
+}
+
 internal static class AutorizacionTesis
 {
     public static Guid ExigirEstudiante(ICurrentUser actual)
@@ -56,6 +78,16 @@ internal static class AutorizacionTesis
         if (actual.UserId is not { } id || actual.Rol != nameof(Rol.Estudiante))
         {
             throw new ProhibidoException("Solo un Estudiante puede realizar esta acción.");
+        }
+
+        return id;
+    }
+
+    public static Guid ExigirAdministrador(ICurrentUser actual)
+    {
+        if (actual.UserId is not { } id || actual.Rol != nameof(Rol.Administrador))
+        {
+            throw new ProhibidoException("Solo un Administrador puede realizar esta acción.");
         }
 
         return id;
@@ -71,5 +103,21 @@ internal static class AutorizacionTesis
         {
             throw new NoEncontradoException("La tesis no existe.");
         }
+    }
+
+    /// <summary>Como <see cref="ExigirVisible"/>, y además el Evaluador con una asignación activa en la tesis.</summary>
+    public static async Task ExigirVisibleAsync(
+        TesisGrado tesis,
+        ICurrentUser actual,
+        IAsignacionRepository asignaciones,
+        CancellationToken cancellationToken)
+    {
+        if (actual.Rol == nameof(Rol.Evaluador) && actual.UserId is { } evaluadorId
+            && await asignaciones.TieneAsignacionActivaEnTesisAsync(evaluadorId, tesis.Id, cancellationToken))
+        {
+            return;
+        }
+
+        ExigirVisible(tesis, actual);
     }
 }

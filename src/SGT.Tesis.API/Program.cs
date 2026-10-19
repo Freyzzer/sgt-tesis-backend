@@ -59,6 +59,7 @@ app.MapAuthEndpoints();
 app.MapUsuariosEndpoints();
 app.MapTesisEndpoints();
 app.MapDocumentosEndpoints();
+app.MapEvaluacionEndpoints();
 
 app.Run();
 

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Domain.Common;
+using SGT.Tesis.Domain.Decisiones;
+using SGT.Tesis.Domain.Evaluacion;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
 
@@ -13,6 +15,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TesisGrado> Tesis => Set<TesisGrado>();
 
     public DbSet<Documento> Documentos => Set<Documento>();
+
+    public DbSet<AsignacionEvaluador> Asignaciones => Set<AsignacionEvaluador>();
+
+    public DbSet<Veredicto> Veredictos => Set<Veredicto>();
+
+    public DbSet<Decision> Decisiones => Set<Decision>();
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
 
@@ -39,6 +47,11 @@ internal sealed class UnitOfWork(AppDbContext db) : IUnitOfWork
         try
         {
             return await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otra solicitud cambió el mismo registro (por ejemplo, dos decisiones simultáneas sobre una etapa).
+            throw new ConflictoException("El recurso fue modificado por otra solicitud. Vuelva a consultarlo e intente de nuevo.");
         }
         catch (DbUpdateException ex) when (EsViolacionDeUnicidad(ex))
         {

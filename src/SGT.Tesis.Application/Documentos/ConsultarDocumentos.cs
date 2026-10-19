@@ -1,6 +1,7 @@
 using FluentValidation;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Domain.GestionTesis;
 
@@ -16,7 +17,11 @@ public sealed class ListarDocumentosQueryValidator : AbstractValidator<ListarDoc
     }
 }
 
-public sealed class ListarDocumentosHandler(ITesisRepository tesis, IDocumentoRepository documentos, ICurrentUser actual)
+public sealed class ListarDocumentosHandler(
+    ITesisRepository tesis,
+    IDocumentoRepository documentos,
+    IAsignacionRepository asignaciones,
+    ICurrentUser actual)
     : IQueryHandler<ListarDocumentosQuery, IReadOnlyList<DocumentoDto>>
 {
     public async Task<IReadOnlyList<DocumentoDto>> HandleAsync(ListarDocumentosQuery query, CancellationToken cancellationToken)
@@ -24,7 +29,7 @@ public sealed class ListarDocumentosHandler(ITesisRepository tesis, IDocumentoRe
         var encontrada = await tesis.ObtenerPorIdAsync(query.TesisId, cancellationToken)
             ?? throw new NoEncontradoException("La tesis no existe.");
 
-        AutorizacionTesis.ExigirVisible(encontrada, actual);
+        await AutorizacionTesis.ExigirVisibleAsync(encontrada, actual, asignaciones, cancellationToken);
 
         var etapa = encontrada.ObtenerEtapa((EtapaTipo)query.Etapa);
         var lista = await documentos.ListarPorEtapaAsync(etapa.Id, cancellationToken);
@@ -40,6 +45,7 @@ public sealed record ArchivoDescarga(Stream Contenido, string NombreOriginal, st
 public sealed class DescargarDocumentoHandler(
     IDocumentoRepository documentos,
     ITesisRepository tesis,
+    IAsignacionRepository asignaciones,
     IFileStorage storage,
     ICurrentUser actual) : IQueryHandler<DescargarDocumentoQuery, ArchivoDescarga>
 {
@@ -51,8 +57,8 @@ public sealed class DescargarDocumentoHandler(
         var tesisDelDocumento = await tesis.ObtenerPorEtapaAsync(documento.EtapaId, cancellationToken)
             ?? throw new NoEncontradoException("El documento no existe.");
 
-        // Dueño y Administrador; los evaluadores asignados se incorporan con US-09.
-        AutorizacionTesis.ExigirVisible(tesisDelDocumento, actual);
+        // Dueño, Administrador y Evaluadores con asignación activa en la tesis.
+        await AutorizacionTesis.ExigirVisibleAsync(tesisDelDocumento, actual, asignaciones, cancellationToken);
 
         var contenido = await storage.AbrirLecturaAsync(documento.NombreAlmacenado, cancellationToken);
 

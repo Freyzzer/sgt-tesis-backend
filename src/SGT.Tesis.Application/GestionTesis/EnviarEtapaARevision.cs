@@ -18,6 +18,7 @@ public sealed class EnviarEtapaARevisionCommandValidator : AbstractValidator<Env
 
 public sealed class EnviarEtapaARevisionHandler(
     ITesisRepository tesis,
+    IDecisionRepository decisiones,
     IRequisitosDocumentales requisitos,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
@@ -47,6 +48,6 @@ public sealed class EnviarEtapaARevisionHandler(
 
         logger.LogInformation("Etapa {Etapa} de la tesis {TesisId} enviada a revisión por {ActorId}", tipo, propia.Id, actual.UserId);
 
-        return TesisDto.Desde(propia);
+        return TesisDto.Desde(propia, await decisiones.ListarPorTesisAsync(propia.Id, cancellationToken));
     }
 }

@@ -22,6 +22,135 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SGT.Tesis.Domain.Decisiones.Decision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AdministradorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EtapaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("FechaUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Justificacion")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Resultado")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EtapaId");
+
+                    b.ToTable("Decisiones", (string)null);
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.Evaluacion.AsignacionEvaluador", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("AsignadoPorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EtapaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EvaluadorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("FechaAsignacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaRetiro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EvaluadorId");
+
+                    b.HasIndex("EtapaId", "EvaluadorId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Asignaciones_Etapa_Evaluador_Activa")
+                        .HasFilter("[Activa] = 1");
+
+                    b.ToTable("AsignacionesEvaluador", (string)null);
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.Evaluacion.Veredicto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comentarios")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("Concepto")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EtapaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EvaluadorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EtapaId", "EvaluadorId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("Veredictos", (string)null);
+                });
+
             modelBuilder.Entity("SGT.Tesis.Domain.GestionTesis.Documento", b =>
                 {
                     b.Property<Guid>("Id")
@@ -109,6 +238,10 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("FechaCierre")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
 
                     b.Property<Guid>("TesisId")
                         .HasColumnType("uniqueidentifier");
@@ -277,6 +410,33 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.Decisiones.Decision", b =>
+                {
+                    b.HasOne("SGT.Tesis.Domain.GestionTesis.Etapa", null)
+                        .WithMany()
+                        .HasForeignKey("EtapaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.Evaluacion.AsignacionEvaluador", b =>
+                {
+                    b.HasOne("SGT.Tesis.Domain.GestionTesis.Etapa", null)
+                        .WithMany()
+                        .HasForeignKey("EtapaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SGT.Tesis.Domain.Evaluacion.Veredicto", b =>
+                {
+                    b.HasOne("SGT.Tesis.Domain.GestionTesis.Etapa", null)
+                        .WithMany()
+                        .HasForeignKey("EtapaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SGT.Tesis.Domain.GestionTesis.Documento", b =>

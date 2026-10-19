@@ -1,4 +1,5 @@
 using SGT.Tesis.Domain.Common;
+using SGT.Tesis.Domain.Decisiones;
 
 namespace SGT.Tesis.Domain.GestionTesis;
 
@@ -84,5 +85,49 @@ public sealed class TesisGrado : BaseEntity
         etapa.EnviarARevision();
 
         return etapa;
+    }
+
+    /// <summary>
+    /// Registra la decisión del Administrador sobre la etapa actual, que debe estar en revisión.
+    /// Aprobar abre la etapa siguiente (o finaliza la tesis tras la 7); rechazar rechaza la tesis; observar devuelve la etapa al estudiante.
+    /// </summary>
+    public Decision Decidir(EtapaTipo tipo, ResultadoDecision resultado, Guid administradorId, string? justificacion, DateTime utcNow)
+    {
+        if (Estado != EstadoTesis.EnCurso)
+        {
+            throw new TransicionInvalidaException("La tesis ya no está en curso.");
+        }
+
+        var etapa = ObtenerEtapa(tipo);
+
+        if (etapa.Tipo != EtapaActual.Tipo)
+        {
+            throw new TransicionInvalidaException("La etapa indicada no es la etapa actual de la tesis.");
+        }
+
+        // INV-2: no se aprueba la etapa N si la N-1 no está aprobada.
+        if (resultado == ResultadoDecision.Aprobada && tipo > EtapaTipo.Estudiante
+            && ObtenerEtapa(tipo - 1).Estado != EstadoEtapa.Aprobado)
+        {
+            throw new TransicionInvalidaException("La etapa anterior debe estar aprobada.");
+        }
+
+        var decision = Decision.Crear(etapa.Id, administradorId, resultado, justificacion, utcNow);
+        etapa.Resolver(resultado, utcNow);
+
+        switch (resultado)
+        {
+            case ResultadoDecision.Aprobada when tipo == EtapaTipo.RequisitosFinales:
+                Estado = EstadoTesis.Finalizada;
+                break;
+            case ResultadoDecision.Aprobada:
+                _etapas.Add(Etapa.Abrir(Id, tipo + 1, utcNow));
+                break;
+            case ResultadoDecision.Rechazada:
+                Estado = EstadoTesis.Rechazada;
+                break;
+        }
+
+        return decision;
     }
 }

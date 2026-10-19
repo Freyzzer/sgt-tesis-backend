@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
 
@@ -37,6 +38,16 @@ public class EnviarEtapaHandlerTests
         }
     }
 
+    private sealed class DecisionesVacias : IDecisionRepository
+    {
+        public Task<IReadOnlyList<Decision>> ListarPorTesisAsync(Guid tesisId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Decision>>([]);
+
+        public void Agregar(Decision decision)
+        {
+        }
+    }
+
     private sealed class Requisitos(params string[] faltantes) : IRequisitosDocumentales
     {
         public Task<IReadOnlyList<string>> ObtenerFaltantesAsync(Guid etapaId, EtapaTipo tipo, CancellationToken cancellationToken) =>
@@ -61,6 +72,7 @@ public class EnviarEtapaHandlerTests
         var guardado = new Guardado();
         var handler = new EnviarEtapaARevisionHandler(
             new Repositorio(tesis),
+            new DecisionesVacias(),
             new Requisitos(faltantes),
             new Actual(estudiante, nameof(Rol.Estudiante)),
             guardado,

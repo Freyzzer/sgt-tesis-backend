@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Documentos;
+using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Infrastructure.Documentos;
 using SGT.Tesis.Infrastructure.Identity;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddOptions<BootstrapOptions>().Bind(configuration.GetSection(BootstrapOptions.SectionName));
 
         services.AddScoped<AuditoriaInterceptor>();
+        services.AddSingleton<InmutabilidadInterceptor>();
 
         services.AddDbContext<AppDbContext>((provider, builder) =>
         {
@@ -45,7 +47,9 @@ public static class DependencyInjection
                     TimeSpan.FromSeconds(db.MaxRetryDelaySeconds),
                     errorNumbersToAdd: null);
             });
-            builder.AddInterceptors(provider.GetRequiredService<AuditoriaInterceptor>());
+            builder.AddInterceptors(
+                provider.GetRequiredService<AuditoriaInterceptor>(),
+                provider.GetRequiredService<InmutabilidadInterceptor>());
         });
 
         services.AddSingleton<IClock, SystemClock>();
@@ -54,6 +58,9 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IAsignacionRepository, AsignacionRepository>();
+        services.AddScoped<IVeredictoRepository, VeredictoRepository>();
+        services.AddScoped<IDecisionRepository, DecisionRepository>();
         services.AddScoped<ITesisRepository, TesisRepository>();
         services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();
         services.AddOptions<DocumentosOptions>().Bind(configuration.GetSection(DocumentosOptions.SectionName)).ValidateOnStart();

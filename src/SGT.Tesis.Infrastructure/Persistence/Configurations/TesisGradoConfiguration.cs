@@ -43,7 +43,10 @@ internal sealed class EtapaConfiguration : IEntityTypeConfiguration<Etapa>
         builder.Property(e => e.Estado).IsRequired().HasConversion<int>();
         builder.Property(e => e.FechaApertura).IsRequired();
 
+        builder.Property(e => e.Revision).IsRequired().IsConcurrencyToken();
+
         builder.Ignore(e => e.EstaAbierta);
+        builder.Ignore(e => e.AdmiteDocumentos);
 
         builder.HasIndex(e => new { e.TesisId, e.Tipo }).IsUnique();
     }
