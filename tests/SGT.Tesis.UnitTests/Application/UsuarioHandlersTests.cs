@@ -51,6 +51,9 @@ public class UsuarioHandlersTests
         public Task<int> ContarAdministradoresActivosAsync(CancellationToken cancellationToken) =>
             Task.FromResult(Datos.Count(u => u.Rol == Rol.Administrador && u.Activo));
 
+        public Task<IReadOnlyList<Usuario>> ListarAdministradoresActivosAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Usuario>>(Datos.Where(u => u.Rol == Rol.Administrador && u.Activo).ToList());
+
         public Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(int page, int pageSize, Rol? rol, bool? activo, CancellationToken cancellationToken) =>
             Task.FromResult(((IReadOnlyList<Usuario>)Datos, Datos.Count));
 

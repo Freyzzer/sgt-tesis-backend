@@ -19,6 +19,10 @@ Las claves se leen de `appsettings.json`, `appsettings.<Ambiente>.json` y variab
 | `Storage:RootPath` | `Storage__RootPath` | Todos | Carpeta de los archivos cargados. Fuera del repositorio, con volumen persistente y respaldo en Staging/Producción. La app no arranca sin ella. |
 | `Documentos:MaxBytes` | `Documentos__MaxBytes` | No (20 MB) | Tamaño máximo por archivo; entre 1 KB y 100 MB. |
 | `Documentos:Requisitos:<Etapa>:<n>` | `Documentos__Requisitos__Estudiante__0` | No | Categorías obligatorias para enviar la etapa (p. ej. `Propuesta firmada`). Vacío hasta que el Product Owner las defina. `<Etapa>`: Estudiante, Propuesta, Consejo, Evaluacion, Pasantia, Articulo o RequisitosFinales. |
+| `Email:Modo` | `Email__Modo` | Todos | `Smtp` (correo real) o `Log` (solo registra; **únicamente Development**). Fuera de Development la app no arranca con `Log`. |
+| `Email:Host`, `Email:Port`, `Email:UseStartTls`, `Email:User`, `Email:FromAddress`, `Email:FromName` | `Email__Host`… | Con `Smtp` | Servidor SMTP (STARTTLS por defecto, puerto 587). `Host` y `FromAddress` son obligatorios. |
+| `Email:Password` | `Email__Password` | Si el servidor autentica | **Secreto.** Nunca se versiona. |
+| `Email:MaxIntentos`, `Email:EsperaBaseSegundos`, `Email:IntervaloSegundos`, `Email:LoteMaximo`, `Email:WorkerHabilitado` | `Email__…` | No (5, 60, 30, 20, true) | Reintentos con espera exponencial, frecuencia del proceso y tamaño de lote. |
 | `Serilog:*` | `Serilog__MinimumLevel__Default` | No | Nivel y destinos de log (consola por defecto). |
 
 ## Comportamiento transversal de la API
@@ -81,3 +85,15 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - No se guardan contraseñas, tokens ni el correo de intentos con usuarios desconocidos.
 - **Correlación:** cada respuesta incluye `X-Correlation-Id` (se acepta el de la solicitud si es `[A-Za-z0-9_-]{1,64}`, si no se genera uno); también aparece en los logs.
 - No hay política de retención ni archivado de la auditoría (a definir con la institución).
+
+## Notificaciones por correo (outbox)
+
+- Los correos se **encolan en la misma transacción** que el cambio de negocio (tabla `Notificaciones`) y un proceso en segundo plano los envía; si el servidor de correo falla, la operación original **no se revierte** y el envío se reintenta con espera exponencial (60 s, 120 s, 240 s…) hasta `Email:MaxIntentos`, tras lo cual queda `Fallida` (revisar la tabla; sin interfaz de administración todavía).
+- Eventos: etapa enviada a revisión → administradores activos; evaluador asignado → el evaluador; decisión (aprobada, observada o rechazada) → el estudiante.
+- **Privacidad:** los correos solo mencionan la etapa y el tipo de evento; nunca el título de la tesis, nombres de personas ni el texto de justificaciones o veredictos (se consultan dentro del sistema).
+- Ejecutar **una sola instancia** del proceso de envío por despliegue (no hay bloqueo entre instancias; con varias podrían duplicarse correos).
+- Pendiente: enlace directo a la tesis en el correo (falta definir la URL pública del frontend) y plantillas HTML.
+
+## Retroalimentación consolidada
+
+`GET /api/v1/tesis/{id}/retroalimentacion` (dueño y Administrador): por etapa, las decisiones con su justificación y, **una vez decidida la etapa**, el veredicto vigente de cada evaluador de forma **anónima** (`Evaluador 1`, `Evaluador 2`…, sin identificadores ni correos). Antes de la decisión no se muestran veredictos.

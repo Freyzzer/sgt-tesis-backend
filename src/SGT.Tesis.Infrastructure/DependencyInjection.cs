@@ -7,8 +7,10 @@ using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Documentos;
 using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Infrastructure.Documentos;
 using SGT.Tesis.Infrastructure.Identity;
+using SGT.Tesis.Infrastructure.Notificaciones;
 using SGT.Tesis.Infrastructure.Persistence;
 using SGT.Tesis.Infrastructure.Persistence.Repositories;
 
@@ -74,6 +76,16 @@ public static class DependencyInjection
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<IDocumentoRepository, DocumentoRepository>();
         services.AddScoped<IRequisitosDocumentales, RequisitosDocumentalesConfigurables>();
+
+        services.AddSingleton<IValidateOptions<EmailOptions>, EmailOptionsValidator>();
+        services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName)).ValidateOnStart();
+        services.AddScoped<INotificador, Notificador>();
+        services.AddScoped<IEmailSender>(provider =>
+            string.Equals(provider.GetRequiredService<IOptions<EmailOptions>>().Value.Modo, "Smtp", StringComparison.OrdinalIgnoreCase)
+                ? ActivatorUtilities.CreateInstance<SmtpEmailSender>(provider)
+                : ActivatorUtilities.CreateInstance<LogEmailSender>(provider));
+        services.AddScoped<OutboxProcessor>();
+        services.AddHostedService<OutboxEmailWorker>();
 
         services.AddHostedService<AdminBootstrapService>();
 

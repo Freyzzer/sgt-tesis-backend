@@ -21,6 +21,9 @@ internal sealed class UsuarioRepository(AppDbContext db) : IUsuarioRepository
     public Task<int> ContarAdministradoresActivosAsync(CancellationToken cancellationToken) =>
         db.Usuarios.CountAsync(u => u.Rol == Rol.Administrador && u.Activo, cancellationToken);
 
+    public async Task<IReadOnlyList<Usuario>> ListarAdministradoresActivosAsync(CancellationToken cancellationToken) =>
+        await db.Usuarios.AsNoTracking().Where(u => u.Rol == Rol.Administrador && u.Activo).ToListAsync(cancellationToken);
+
     public async Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(
         int page,
         int pageSize,

@@ -1,5 +1,6 @@
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Retroalimentacion;
 
 namespace SGT.Tesis.API.Endpoints;
 
@@ -34,6 +35,13 @@ public static class TesisEndpoints
                 IQueryHandler<ObtenerTesisQuery, TesisDto> handler,
                 CancellationToken ct) => Results.Ok(await handler.HandleAsync(new ObtenerTesisQuery(id), ct)))
             .Produces<TesisDto>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{id:guid}/retroalimentacion", async (
+                Guid id,
+                IQueryHandler<ObtenerRetroalimentacionQuery, RetroalimentacionDto> handler,
+                CancellationToken ct) => Results.Ok(await handler.HandleAsync(new ObtenerRetroalimentacionQuery(id), ct)))
+            .Produces<RetroalimentacionDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/{id:guid}/etapas/{numero:int}/enviar", async (

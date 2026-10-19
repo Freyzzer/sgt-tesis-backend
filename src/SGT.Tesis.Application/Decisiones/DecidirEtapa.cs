@@ -4,6 +4,7 @@ using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.GestionTesis;
 
@@ -31,6 +32,8 @@ public sealed class DecidirEtapaCommandValidator : AbstractValidator<DecidirEtap
 public sealed class DecidirEtapaHandler(
     ITesisRepository tesis,
     IDecisionRepository decisiones,
+    IUsuarioRepository usuarios,
+    INotificador notificador,
     ICurrentUser actual,
     IClock clock,
     IUnitOfWork unitOfWork,
@@ -48,6 +51,13 @@ public sealed class DecidirEtapaHandler(
         var decision = encontrada.Decidir(tipo, command.Resultado, adminId, command.Justificacion, clock.UtcNow);
 
         decisiones.Agregar(decision);
+
+        if (await usuarios.ObtenerPorIdAsync(encontrada.StudentId, cancellationToken) is { } estudiante)
+        {
+            var (asunto, cuerpo) = Plantillas.Decision(tipo, command.Resultado);
+            notificador.Encolar(estudiante.Correo, asunto, cuerpo);
+        }
+
         audit.Registrar(AccionesAuditoria.DecisionRegistrada, "Decision", decision.Id, encontrada.Id, $"{decision.Resultado} en la etapa {tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

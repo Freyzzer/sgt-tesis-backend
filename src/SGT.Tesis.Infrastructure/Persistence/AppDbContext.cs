@@ -8,6 +8,7 @@ using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.Evaluacion;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
+using SGT.Tesis.Domain.Notificaciones;
 
 namespace SGT.Tesis.Infrastructure.Persistence;
 
@@ -24,6 +25,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Decision> Decisiones => Set<Decision>();
 
     public DbSet<RegistroAuditoria> RegistrosAuditoria => Set<RegistroAuditoria>();
+
+    public DbSet<NotificacionPendiente> Notificaciones => Set<NotificacionPendiente>();
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
 

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.Decisiones;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
@@ -49,6 +50,36 @@ public class EnviarEtapaHandlerTests
         }
     }
 
+    private sealed class NotificadorEnMemoria : INotificador
+    {
+        public List<(string Destinatario, string Asunto, string Cuerpo)> Encolados { get; } = [];
+
+        public void Encolar(string destinatario, string asunto, string cuerpo) => Encolados.Add((destinatario, asunto, cuerpo));
+    }
+
+    private sealed class Administradores : IUsuarioRepository
+    {
+        public Task<Usuario?> ObtenerPorCorreoAsync(string correoNormalizado, CancellationToken cancellationToken) => Task.FromResult<Usuario?>(null);
+
+        public Task<Usuario?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<Usuario?>(null);
+
+        public Task<bool> ExisteCorreoAsync(string correoNormalizado, CancellationToken cancellationToken) => Task.FromResult(false);
+
+        public Task<bool> ExisteAdministradorAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+
+        public Task<int> ContarAdministradoresActivosAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+
+        public Task<IReadOnlyList<Usuario>> ListarAdministradoresActivosAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Usuario>>([Usuario.Crear("Ad", "Min", "admin@x.edu", "hash", Rol.Administrador)]);
+
+        public Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(int page, int pageSize, Rol? rol, bool? activo, CancellationToken cancellationToken) =>
+            Task.FromResult(((IReadOnlyList<Usuario>)[], 0));
+
+        public void Agregar(Usuario usuario)
+        {
+        }
+    }
+
     private sealed class Requisitos(params string[] faltantes) : IRequisitosDocumentales
     {
         public Task<IReadOnlyList<string>> ObtenerFaltantesAsync(Guid etapaId, EtapaTipo tipo, CancellationToken cancellationToken) =>
@@ -74,6 +105,8 @@ public class EnviarEtapaHandlerTests
         var handler = new EnviarEtapaARevisionHandler(
             new Repositorio(tesis),
             new DecisionesVacias(),
+            new Administradores(),
+            new NotificadorEnMemoria(),
             new Requisitos(faltantes),
             new Actual(estudiante, nameof(Rol.Estudiante)),
             guardado,

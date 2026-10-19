@@ -66,6 +66,8 @@ public interface IUsuarioRepository
 
     Task<int> ContarAdministradoresActivosAsync(CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Usuario>> ListarAdministradoresActivosAsync(CancellationToken cancellationToken);
+
     Task<(IReadOnlyList<Usuario> Items, int Total)> ListarAsync(int page, int pageSize, Rol? rol, bool? activo, CancellationToken cancellationToken);
 
     void Agregar(Usuario usuario);

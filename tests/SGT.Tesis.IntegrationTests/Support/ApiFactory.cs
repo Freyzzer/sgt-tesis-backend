@@ -7,9 +7,48 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Infrastructure.Notificaciones;
 using SGT.Tesis.Infrastructure.Persistence;
 
 namespace SGT.Tesis.IntegrationTests.Support;
+
+/// <summary>Doble de <see cref="IEmailSender"/> que guarda los correos y puede simular fallos.</summary>
+public sealed class CorreosCapturados : IEmailSender
+{
+    public sealed record Correo(string Destinatario, string Asunto, string Cuerpo);
+
+    private readonly List<Correo> _enviados = [];
+
+    public IReadOnlyList<Correo> Enviados
+    {
+        get
+        {
+            lock (_enviados)
+            {
+                return [.. _enviados];
+            }
+        }
+    }
+
+    /// <summary>Cantidad de envíos que deben fallar antes de volver a funcionar.</summary>
+    public int FallosPendientes { get; set; }
+
+    public Task EnviarAsync(string destinatario, string asunto, string cuerpo, CancellationToken cancellationToken)
+    {
+        if (FallosPendientes > 0)
+        {
+            FallosPendientes--;
+            throw new InvalidOperationException("Servidor de correo no disponible.");
+        }
+
+        lock (_enviados)
+        {
+            _enviados.Add(new Correo(destinatario, asunto, cuerpo));
+        }
+
+        return Task.CompletedTask;
+    }
+}
 
 public sealed class FakeClock : IClock
 {
@@ -34,6 +73,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     public FakeClock Reloj { get; } = new();
 
+    /// <summary>Bandeja de correos "enviados" por el outbox durante la prueba.</summary>
+    public CorreosCapturados Correos { get; } = new();
+
     public Dictionary<string, string?> Configuracion { get; } = new()
     {
         ["ConnectionStrings:DefaultConnection"] = "Server=(none);Database=pruebas;User ID=sgt_app_test;Password=marcador",
@@ -43,6 +85,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         ["RateLimit:LoginPermitPerMinute"] = "1000",
         ["Cors:AllowedOrigins:0"] = "http://frontend.test",
         ["Documentos:MaxBytes"] = "1048576",
+        ["Email:Modo"] = "Log",
+        ["Email:WorkerHabilitado"] = "false",
         ["Bootstrap:AdminCorreo"] = AdminCorreo,
         ["Bootstrap:AdminPassword"] = AdminPassword,
     };
@@ -57,6 +101,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<DbContextOptions<AppDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<AppDbContext>>();
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton(Correos);
+            services.AddSingleton<IEmailSender>(Correos);
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Reloj);
 

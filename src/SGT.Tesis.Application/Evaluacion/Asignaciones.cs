@@ -4,6 +4,7 @@ using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.Common;
 using SGT.Tesis.Domain.Evaluacion;
 using SGT.Tesis.Domain.GestionTesis;
@@ -26,6 +27,7 @@ public sealed class AsignarEvaluadorHandler(
     ITesisRepository tesis,
     IUsuarioRepository usuarios,
     IAsignacionRepository asignaciones,
+    INotificador notificador,
     ICurrentUser actual,
     IClock clock,
     IUnitOfWork unitOfWork,
@@ -60,10 +62,11 @@ public sealed class AsignarEvaluadorHandler(
 
         var asignacion = AsignacionEvaluador.Crear(etapa.Id, evaluador.Id, adminId, clock.UtcNow);
         asignaciones.Agregar(asignacion);
+        var (asunto, cuerpo) = Plantillas.EvaluadorAsignado(etapa.Tipo);
+        notificador.Encolar(evaluador.Correo, asunto, cuerpo);
         audit.Registrar(AccionesAuditoria.EvaluadorAsignado, "Asignacion", asignacion.Id, encontrada.Id, $"Evaluador {evaluador.Id}, etapa {etapa.Tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // La notificación por correo y el registro de auditoría persistente llegan con US-15 y US-12.
         logger.LogInformation("Evaluador {EvaluadorId} asignado a la etapa {Etapa} de la tesis {TesisId} por {ActorId}", evaluador.Id, etapa.Tipo, encontrada.Id, adminId);
 
         return AsignacionDto.Desde(asignacion);

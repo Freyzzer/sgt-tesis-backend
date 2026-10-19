@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.GestionTesis;
 
 namespace SGT.Tesis.Application.GestionTesis;
@@ -20,6 +21,8 @@ public sealed class EnviarEtapaARevisionCommandValidator : AbstractValidator<Env
 public sealed class EnviarEtapaARevisionHandler(
     ITesisRepository tesis,
     IDecisionRepository decisiones,
+    IUsuarioRepository usuarios,
+    INotificador notificador,
     IRequisitosDocumentales requisitos,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
@@ -46,6 +49,14 @@ public sealed class EnviarEtapaARevisionHandler(
         }
 
         propia.EnviarEtapaARevision(tipo);
+
+        var (asunto, cuerpo) = Plantillas.EtapaEnRevision(tipo);
+
+        foreach (var administrador in await usuarios.ListarAdministradoresActivosAsync(cancellationToken))
+        {
+            notificador.Encolar(administrador.Correo, asunto, cuerpo);
+        }
+
         audit.Registrar(AccionesAuditoria.EtapaEnviada, "Etapa", etapa.Id, propia.Id, $"Etapa {tipo}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
