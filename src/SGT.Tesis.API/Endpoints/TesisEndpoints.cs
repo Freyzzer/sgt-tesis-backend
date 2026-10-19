@@ -1,6 +1,8 @@
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Consultas;
 using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Application.Retroalimentacion;
+using SGT.Tesis.Application.Usuarios;
 
 namespace SGT.Tesis.API.Endpoints;
 
@@ -23,6 +25,14 @@ public static class TesisEndpoints
             .AddEndpointFilter<ValidationFilter<RegistrarTesisCommand>>()
             .Produces<TesisDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict);
+
+        group.MapGet("/", async (
+                [AsParameters] ListarTesisQuery query,
+                IQueryHandler<ListarTesisQuery, PagedResult<TesisResumenDto>> handler,
+                CancellationToken ct) => Results.Ok(await handler.HandleAsync(query, ct)))
+            .AddEndpointFilter<ValidationFilter<ListarTesisQuery>>()
+            .Produces<PagedResult<TesisResumenDto>>()
+            .ProducesProblem(StatusCodes.Status403Forbidden);
 
         group.MapGet("/mia", async (
                 IQueryHandler<ObtenerMiTesisQuery, TesisDto> handler,

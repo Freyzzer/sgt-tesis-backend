@@ -106,6 +106,9 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 
 - `GET /api/v1/dashboard/kpis[?diasEstancamiento=15]` (1–365): totales de tesis por estado; tesis en curso por etapa; tiempo promedio en días por etapa cerrada; decisiones (total, aprobadas, observadas, rechazadas y sus tasas en %); etapas en revisión y **estancadas** (más de N días esperando validación); carga por evaluador (asignaciones activas en etapas en revisión y veredictos pendientes).
 - `GET /api/v1/dashboard/cola-validacion[?page&pageSize]` (≤ 100): etapas en revisión de la que más tiempo lleva esperando a la más reciente, con estudiante, título, días en revisión, evaluadores asignados y cuántos ya emitieron veredicto.
+- `GET /api/v1/auth/yo`: perfil de la persona autenticada (`id, nombres, apellidos, correo, rol, debeCambiarPassword`). Se permite aun con contraseña temporal, para que el cliente decida a dónde redirigir.
+- `GET /api/v1/evaluaciones/mias[?soloPendientes&page&pageSize]` (Evaluador): sus asignaciones activas con tesis, estudiante, etapa, estado y si ya emitió veredicto; `soloPendientes` deja las etapas en revisión sin veredicto. Primero las que están en revisión, más antiguas primero.
+- `GET /api/v1/tesis[?estado&etapa&texto&page&pageSize]` (Administrador): listado paginado con la etapa vigente; `texto` busca en título y en nombre o correo del estudiante.
 - Solo Administrador. Se calculan con proyecciones (sin cargar entidades completas); solo el promedio de días se calcula en memoria sobre dos fechas por etapa cerrada.
 - Rendimiento: la prueba de humo con 10 000 tesis responde en menos de 2 s sobre SQLite en memoria. El objetivo p95 < 800 ms debe medirse contra SQL Server con pruebas de carga (Sprint 8). Si el volumen crece, conviene materializar los promedios.
 - `Etapa.EnRevisionDesde` registra el último envío a revisión (las etapas ya en revisión antes de esta versión usan su fecha de apertura).
@@ -153,6 +156,6 @@ Con un usuario, los KPIs tardan ~120–250 ms. El objetivo p95 < 800 ms (AC-14.3
 | `POST /api/v1/auth/restablecer-password` `{token, passwordNueva}` | Anónimo (con límite de solicitudes) | Cambia la contraseña con el token, levanta bloqueos, cierra todas las sesiones y avisa por correo. Token inválido, vencido o ya usado: 400 genérico. |
 
 - **Token:** 48 bytes aleatorios; solo se guarda su **hash**; vence a los **30 minutos** y es de **un solo uso**. El correo que lo contiene se marca como *sensible*: su cuerpo se **borra de la base de datos** al enviarse (o al agotar los intentos).
-- **Contraseña temporal:** las cuentas creadas por el Administrador (y el Administrador inicial, salvo `Bootstrap:ExigirCambioPassword=false`) tienen `DebeCambiarPassword`. El login lo indica (`debeCambiarPassword: true`) y mientras dure **toda la API responde 403** con `codigo: "cambio_password_obligatorio"`, salvo `cambiar-password` y `logout`.
+- **Contraseña temporal:** las cuentas creadas por el Administrador (y el Administrador inicial, salvo `Bootstrap:ExigirCambioPassword=false`) tienen `DebeCambiarPassword`. El login lo indica (`debeCambiarPassword: true`) y mientras dure **toda la API responde 403** con `codigo: "cambio_password_obligatorio"`, salvo `cambiar-password`, `logout` y `yo`.
 - Eventos de auditoría: `Auth.PasswordCambiada`, `Auth.PasswordRestablecimientoSolicitado` y `Auth.PasswordRestablecida`.
 - Sin `Frontend:UrlRestablecerPassword` el correo trae el código en texto: aceptable en desarrollo, pero en producción conviene el enlace al frontend.

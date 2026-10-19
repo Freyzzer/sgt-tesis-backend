@@ -120,6 +120,7 @@ app.MapDocumentosEndpoints();
 app.MapEvaluacionEndpoints();
 app.MapAuditoriaEndpoints();
 app.MapDashboardEndpoints();
+app.MapConsultasEndpoints();
 
 app.Run();
 return 0;

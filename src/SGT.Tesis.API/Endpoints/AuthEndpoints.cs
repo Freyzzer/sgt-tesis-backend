@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SGT.Tesis.API.Security;
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Consultas;
 using SGT.Tesis.Application.Contrasenas;
 using SGT.Tesis.Application.Identidad.Dtos;
 using SGT.Tesis.Application.Identidad.Login;
@@ -31,6 +32,13 @@ public static class AuthEndpoints
             .AddEndpointFilter<ValidationFilter<RefreshCommand>>()
             .RequireRateLimiting(Politicas.LimiteLogin)
             .Produces<TokenResponse>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/yo", async (
+                IQueryHandler<ObtenerPerfilQuery, PerfilDto> handler,
+                CancellationToken ct) => Results.Ok(await handler.HandleAsync(new ObtenerPerfilQuery(), ct)))
+            .RequireAuthorization()
+            .Produces<PerfilDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         group.MapPost("/cambiar-password", async (

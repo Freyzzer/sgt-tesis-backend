@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Consultas;
 using SGT.Tesis.Application.Documentos;
 using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
@@ -72,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<IDecisionRepository, DecisionRepository>();
         services.AddScoped<IAuditTrail, AuditTrail>();
         services.AddScoped<IReportesRepository, ReportesRepository>();
+        services.AddScoped<IConsultasRepository, ConsultasRepository>();
         services.AddOptions<DashboardOptions>().Bind(configuration.GetSection(DashboardOptions.SectionName));
         services.AddSingleton<IReportesPolicy, DashboardPolicy>();
         services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();

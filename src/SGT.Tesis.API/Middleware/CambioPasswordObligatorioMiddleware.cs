@@ -13,6 +13,7 @@ public sealed class CambioPasswordObligatorioMiddleware(RequestDelegate next)
     private static readonly string[] RutasPermitidas =
     [
         "/api/v1/auth/cambiar-password",
+        "/api/v1/auth/yo",
         "/api/v1/auth/logout",
         "/health",
     ];
