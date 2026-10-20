@@ -1,6 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\SGT.Tesis.Domain\SGT.Tesis.Domain.csproj" />
     <ProjectReference Include="..\SGT.Tesis.Application\SGT.Tesis.Application.csproj" />
   </ItemGroup>
 
