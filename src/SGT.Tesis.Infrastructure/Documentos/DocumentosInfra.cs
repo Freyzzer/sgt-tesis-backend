@@ -16,7 +16,7 @@ public sealed class DocumentosOptions
 
     public long MaxBytes { get; set; } = 20L * 1024 * 1024;
 
-    /// <summary>Categorías obligatorias por etapa (clave: nombre de la etapa). Vacío hasta que el Product Owner las defina.</summary>
+    /// <summary>Categorías obligatorias por etapa (clave: nombre de la etapa). Por defecto (appsettings.json): la propuesta en «Propuesta» y la pasantía en «Pasantía».</summary>
     public Dictionary<string, string[]> Requisitos { get; set; } = [];
 }
 
@@ -60,8 +60,11 @@ internal sealed class DocumentosPolicy(IOptions<DocumentosOptions> options) : ID
 {
     public long TamanoMaximoBytes => options.Value.MaxBytes;
 
+    // Una entrada vacía anula el requisito por defecto (p. ej. Documentos__Requisitos__Propuesta__0="" en un ambiente de pruebas).
     public IReadOnlyList<string> CategoriasRequeridas(EtapaTipo tipo) =>
-        options.Value.Requisitos.TryGetValue(tipo.ToString(), out var categorias) ? categorias : [];
+        options.Value.Requisitos.TryGetValue(tipo.ToString(), out var categorias)
+            ? categorias.Where(c => !string.IsNullOrWhiteSpace(c)).ToList()
+            : [];
 }
 
 /// <summary>Almacenamiento en disco. Solo acepta nombres generados por el sistema (GUID + extensión permitida).</summary>

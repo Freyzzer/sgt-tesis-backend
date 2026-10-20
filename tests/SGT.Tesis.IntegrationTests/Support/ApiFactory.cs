@@ -101,6 +101,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         ["RateLimit:LoginPermitPerMinute"] = "1000",
         ["Cors:AllowedOrigins:0"] = "http://frontend.test",
         ["Documentos:MaxBytes"] = "1048576",
+        // Las pruebas de flujo no suben documentos: se anulan los requisitos por defecto (entrada vacía).
+        ["Documentos:Requisitos:Propuesta:0"] = "",
+        ["Documentos:Requisitos:Pasantia:0"] = "",
         ["Dashboard:KpisCacheSegundos"] = "0",
         ["Email:Modo"] = "Log",
         ["Email:WorkerHabilitado"] = "false",

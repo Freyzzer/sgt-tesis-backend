@@ -3,6 +3,43 @@
 **Para:** Product Owner · **De:** equipo de desarrollo · **Fecha:** 2026-10-19  
 **Lectura:** 10 minutos · **Respuesta:** una reunión de 45 minutos
 
+## Respuestas recibidas (2026-10-20)
+
+| Tema | Respuesta del Product Owner | Estado en el sistema |
+|---|---|---|
+| Documentos obligatorios (#42) | Por ahora solo el de la propuesta y el de la pasantía | **Aplicado**: configuración por defecto en `appsettings.json` |
+| Una tesis a la vez | Una sola tesis activa; intentos ilimitados tras un rechazo | Ya funciona así |
+| Rechazo de una etapa (#43) | Terminal después de «Evaluación» y en la validación de requisitos finales | **Por aclarar**: qué pasa al rechazar las etapas 1 a 4 |
+| Actores (#44) | Intervienen los del consejo | **Por aclarar**: ¿rol propio o evaluadores asignados a «Consejo»? |
+| Evaluadores y veredictos (#44) | Máximo tres por etapa; deben aprobar todos; correcciones ilimitadas, según el evaluador | **Por aclarar** la regla de decisión (ver abajo); luego se implementa |
+| Visibilidad (#46) | El estudiante puede ver su proceso actualizado en todo momento | **Por aclarar**: ¿ve cada veredicto al emitirse? ¿con nombre o anónimo? |
+| Plazos y alertas (#47) | No se manejan | Sin cambios: no se construye |
+| Autenticación (#45) | SSO institucional | **Decidido**; falta el proveedor (TI) para configurarlo |
+| Base de datos | SQL Server; AWS o servidor propio por confirmar | Sin cambios; el despliegue espera la confirmación |
+| Accesibilidad | Las normas de la universidad | Se contrastará cuando se entreguen |
+| Disponibilidad, RPO y RTO | Se hablará con la profesora | Pendiente |
+
+### Aclaraciones recibidas (2026-10-20)
+
+| Pregunta | Respuesta | Consecuencia |
+|---|---|---|
+| Qué se evalúa en Consejo, Pasantía y Artículo | Son requisitos de la tesis. La pasantía es un método de trabajo de grado parecido a las prácticas; el artículo es donde se obtiene la información para referenciar la propuesta; el consejo es esencialmente burocracia | **No se necesita un rol de «consejo»**: la administración lo gestiona con los roles actuales |
+| Rechazo en las etapas 1 a 4 | Se pueden reintentar; los requisitos finales también | Rechazar una de esas etapas **no cierra la tesis**: el estudiante corrige y reenvía |
+| Quién decide con varios evaluadores | El administrador confirma. Si hay observaciones, se notifica al estudiante para que corrija y se vuelva a evaluar | La etapa solo se puede aprobar si **todos** sus evaluadores (máximo 3) dieron *Favorable* |
+| Visibilidad de los veredictos | Sí, el estudiante los ve; cada vez que se emite una evaluación se le notifica | Veredictos visibles al emitirse y correo al estudiante por cada uno |
+| Proveedor de SSO | Microsoft (por confirmar con TI) | Autenticación con OpenID Connect contra Microsoft Entra ID |
+
+**Regla de rechazo que implementaremos (por confirmar):** *Pasantía* y *Artículo* son definitivas (rechazan la tesis); las demás etapas se reintentan. «Reintentar» significa que el estudiante vuelve a subir documentos y reenvía **la misma etapa**, sin perder la tesis. Las respuestas del Product Owner sobre «Requisitos finales» parecen discrepar entre sí y hay que confirmarlo.
+
+**Pendiente:** si los veredictos que ve el estudiante son anónimos («Evaluador 1») o con nombre (por defecto seguirán anónimos) y la confirmación de TI sobre el *tenant* de Microsoft y cómo se asignan los roles.
+
+### Todavía pendiente
+
+1. **Confirmar la regla de rechazo:** *Pasantía* y *Artículo* definitivas; las demás etapas se reintentan (ver arriba).
+2. **Anonimato:** ¿el estudiante ve los veredictos como «Evaluador 1» o con el nombre del evaluador?
+3. **SSO (para TI):** confirmar que es Microsoft Entra ID, el *tenant* y cómo se asignan los roles (grupos del directorio o asignación en el sistema).
+4. **Despliegue, disponibilidad, RPO/RTO y accesibilidad:** se acordarán con la profesora y con las normas de la universidad.
+
 ## Por qué lo estamos pidiendo
 
 El sistema ya funciona de punta a punta (estudiante, evaluador y administrador) y está probado. Para pasar a producción faltan **cuatro decisiones de negocio** que hoy están resueltas con supuestos nuestros. Si los supuestos son correctos, no hay nada que cambiar; si no, es mejor saberlo ahora y no después de la puesta en marcha.
