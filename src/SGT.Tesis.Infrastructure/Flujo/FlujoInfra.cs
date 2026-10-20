@@ -14,6 +14,9 @@ public sealed class FlujoOptions
 
     /// <summary>Clave: nombre de la etapa (Estudiante, Propuesta, Consejo, Evaluacion, Pasantia, Articulo o RequisitosFinales).</summary>
     public Dictionary<string, PoliticaEtapaOptions> Etapas { get; set; } = [];
+
+    /// <summary>Si el estudiante ve el nombre del evaluador en la retroalimentación. Por defecto, no.</summary>
+    public bool MostrarNombreEvaluador { get; set; }
 }
 
 public sealed class PoliticaEtapaOptions
@@ -51,6 +54,8 @@ internal sealed class FlujoOptionsValidator : IValidateOptions<FlujoOptions>
 /// <summary>Combina la configuración con los valores acordados por defecto.</summary>
 internal sealed class PoliticasDeEtapaConfigurables(IOptions<FlujoOptions> options) : IPoliticasDeEtapa
 {
+    public bool MostrarNombreEvaluador => options.Value.MostrarNombreEvaluador;
+
     public PoliticaEtapa Para(EtapaTipo tipo)
     {
         var porDefecto = PoliticaEtapa.PorDefecto(tipo);

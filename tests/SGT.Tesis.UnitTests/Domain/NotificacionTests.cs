@@ -92,6 +92,10 @@ public class NotificacionTests
                 Plantillas.Decision(tipo, ResultadoDecision.Aprobada),
                 Plantillas.Decision(tipo, ResultadoDecision.Observada),
                 Plantillas.Decision(tipo, ResultadoDecision.Rechazada),
+                Plantillas.Decision(tipo, ResultadoDecision.Rechazada, reintentable: true),
+                Plantillas.VeredictoEmitido(tipo, 2),
+                Plantillas.EtapaParaEvaluar(tipo, 1),
+                Plantillas.EtapaParaEvaluar(tipo, 3),
             };
 
             Assert.All(textos, t =>

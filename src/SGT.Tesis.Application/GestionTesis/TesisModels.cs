@@ -49,6 +49,9 @@ public sealed record TesisDto(
 public interface IPoliticasDeEtapa
 {
     PoliticaEtapa Para(EtapaTipo tipo);
+
+    /// <summary>Si el estudiante ve el nombre del evaluador en la retroalimentación (por defecto, no: «Evaluador 1»…).</summary>
+    bool MostrarNombreEvaluador { get; }
 }
 
 /// <summary>Requisitos documentales de cada etapa (ver <c>Documentos:Requisitos</c>).</summary>

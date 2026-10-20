@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.GestionTesis;
 
@@ -22,6 +23,7 @@ public sealed class EnviarEtapaARevisionHandler(
     ITesisRepository tesis,
     IDecisionRepository decisiones,
     IUsuarioRepository usuarios,
+    IAsignacionRepository asignaciones,
     INotificador notificador,
     IRequisitosDocumentales requisitos,
     ICurrentUser actual,
@@ -50,12 +52,24 @@ public sealed class EnviarEtapaARevisionHandler(
         }
 
         propia.EnviarEtapaARevision(tipo, clock.UtcNow);
+        var ronda = etapa.Ronda;
 
         var (asunto, cuerpo) = Plantillas.EtapaEnRevision(tipo);
 
         foreach (var administrador in await usuarios.ListarAdministradoresActivosAsync(cancellationToken))
         {
             notificador.Encolar(administrador.Correo, asunto, cuerpo);
+        }
+
+        // Cada envío abre una ronda: los evaluadores asignados deben evaluar (o volver a evaluar) la versión nueva.
+        var (asuntoEvaluador, cuerpoEvaluador) = Plantillas.EtapaParaEvaluar(tipo, ronda);
+
+        foreach (var asignacion in (await asignaciones.ListarPorEtapaAsync(etapa.Id, cancellationToken)).Where(a => a.Activa))
+        {
+            if (await usuarios.ObtenerPorIdAsync(asignacion.EvaluadorId, cancellationToken) is { Activo: true } evaluador)
+            {
+                notificador.Encolar(evaluador.Correo, asuntoEvaluador, cuerpoEvaluador);
+            }
         }
 
         audit.Registrar(AccionesAuditoria.EtapaEnviada, "Etapa", etapa.Id, propia.Id, $"Etapa {tipo}.");

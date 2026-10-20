@@ -24,6 +24,7 @@ Las claves se leen de `appsettings.json`, `appsettings.<Ambiente>.json` y variab
 | `Email:Password` | `Email__Password` | Si el servidor autentica | **Secreto.** Nunca se versiona. |
 | `Email:MaxIntentos`, `Email:EsperaBaseSegundos`, `Email:IntervaloSegundos`, `Email:LoteMaximo`, `Email:WorkerHabilitado` | `Email__…` | No (5, 60, 30, 20, true) | Reintentos con espera exponencial, frecuencia del proceso y tamaño de lote. |
 | `Dashboard:KpisCacheSegundos` | `Dashboard__KpisCacheSegundos` | No (30) | Vigencia en memoria de los KPIs (0 = sin caché; máx. 600). La cola de validación nunca se cachea. |
+| `Flujo:MostrarNombreEvaluador` | `Flujo__MostrarNombreEvaluador` | No (`false`) | Si el estudiante ve el nombre del evaluador en la retroalimentación (por defecto, «Evaluador 1»…). |
 | `Flujo:Etapas:<Etapa>:PermiteReintento` | `Flujo__Etapas__Pasantia__PermiteReintento` | No (`true`, salvo Pasantia y Articulo: `false`) | Si rechazar la etapa permite corregir y reenviar (la tesis sigue en curso) o es definitivo (la tesis queda rechazada). Ver `docs/PROCESO_DE_ETAPAS.md`. |
 | `Flujo:Etapas:<Etapa>:MaxEvaluadores` | `Flujo__Etapas__Consejo__MaxEvaluadores` | No (3) | Tope de evaluadores activos por etapa (1 a 10). |
 | `Flujo:Etapas:<Etapa>:ExigeUnanimidad` | `Flujo__Etapas__Consejo__ExigeUnanimidad` | No (`true`) | Si aprobar exige que **todos** los evaluadores activos tengan un veredicto *Favorable* en la **ronda actual**. Sin evaluadores asignados, el administrador aprueba directamente. |
@@ -96,7 +97,7 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 ## Notificaciones por correo (outbox)
 
 - Los correos se **encolan en la misma transacción** que el cambio de negocio (tabla `Notificaciones`) y un proceso en segundo plano los envía; si el servidor de correo falla, la operación original **no se revierte** y el envío se reintenta con espera exponencial (60 s, 120 s, 240 s…) hasta `Email:MaxIntentos`, tras lo cual queda `Fallida` (revisar la tabla; sin interfaz de administración todavía).
-- Eventos: etapa enviada a revisión → administradores activos; evaluador asignado → el evaluador; decisión (aprobada, observada o rechazada) → el estudiante.
+- Eventos: etapa enviada o reenviada a revisión → administradores activos **y evaluadores asignados** (con el número de ronda); evaluador asignado → el evaluador; **veredicto emitido o actualizado → el estudiante** (sin concepto ni comentarios); decisión (aprobada, observada o rechazada) → el estudiante.
 - **Privacidad:** los correos solo mencionan la etapa y el tipo de evento; nunca el título de la tesis, nombres de personas ni el texto de justificaciones o veredictos (se consultan dentro del sistema).
 - Ejecutar **una sola instancia** del proceso de envío por despliegue (no hay bloqueo entre instancias; con varias podrían duplicarse correos).
 - Pendiente: enlace directo a la tesis en el correo (falta definir la URL pública del frontend) y plantillas HTML.
@@ -109,7 +110,7 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - **Aprobar** una etapa exige que todos sus evaluadores activos tengan un veredicto *Favorable* **en la ronda actual**; si no, `422` con el mensaje «…(N de M)». Los veredictos de rondas anteriores se conservan como historial pero no cuentan. Observar y rechazar no tienen esa restricción. Una etapa sin evaluadores la aprueba el administrador directamente.
 - Se puede desactivar por etapa con `Flujo:Etapas:<Etapa>:ExigeUnanimidad=false`. Ver `docs/PROCESO_DE_ETAPAS.md`.
 
-`GET /api/v1/tesis/{id}/retroalimentacion` (dueño y Administrador): por etapa, las decisiones con su justificación y, **una vez decidida la etapa**, el veredicto vigente de cada evaluador de forma **anónima** (`Evaluador 1`, `Evaluador 2`…, sin identificadores ni correos). Antes de la decisión no se muestran veredictos.
+`GET /api/v1/tesis/{id}/retroalimentacion` (dueño y Administrador): por etapa, las decisiones con su justificación y el veredicto vigente de cada evaluador **en cada ronda, apenas se emite** (no hay que esperar la decisión). Cada veredicto lleva su `ronda`; el evaluador es **anónimo** por defecto (`Evaluador 1`, `Evaluador 2`…, sin identificadores ni correos) y con `Flujo:MostrarNombreEvaluador=true` se muestra su nombre (nunca su correo o identificador).
 
 ## Dashboard del Administrador
 

@@ -63,7 +63,7 @@ public class RetroalimentacionTests : IClassFixture<ApiFactory>
 
     [Fact]
     [Trait("AC", "13.1")]
-    public async Task Antes_de_la_decision_no_se_muestran_los_veredictos()
+    public async Task Los_veredictos_se_ven_apenas_se_emiten_aunque_la_etapa_no_tenga_decision()
     {
         var (tesisId, estudiante, admin) = await NuevoAsync();
         var (evaluadorId, correo) = await _factory.SembrarUsuarioAsync(Rol.Evaluador);
@@ -78,7 +78,8 @@ public class RetroalimentacionTests : IClassFixture<ApiFactory>
         var etapa1 = body.GetProperty("etapas")[0];
 
         Assert.Equal(0, etapa1.GetProperty("decisiones").GetArrayLength());
-        Assert.Equal(0, etapa1.GetProperty("veredictos").GetArrayLength());
+        Assert.Equal(1, etapa1.GetProperty("veredictos").GetArrayLength());
+        Assert.Equal("Todavía sin decisión.", etapa1.GetProperty("veredictos")[0].GetProperty("comentarios").GetString());
     }
 
     [Fact]

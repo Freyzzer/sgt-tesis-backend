@@ -46,6 +46,19 @@ public static class Plantillas
         "SGT-Tesis: nueva asignación de evaluación",
         $"Se le asignó la evaluación de la etapa {NombreEtapa(tipo)} de una tesis.\n\nIngrese al sistema para ver el detalle y emitir su veredicto.");
 
+    /// <summary>Aviso al estudiante: un evaluador emitió o actualizó su veredicto. No incluye el concepto ni los comentarios (se consultan en el sistema).</summary>
+    public static (string Asunto, string Cuerpo) VeredictoEmitido(EtapaTipo tipo, int ronda) => (
+        $"SGT-Tesis: nueva evaluación de su etapa {NombreEtapa(tipo)}",
+        $"Un evaluador emitió su veredicto sobre la etapa {NombreEtapa(tipo)} de su tesis (ronda {ronda}).\n\nIngrese al sistema para ver su avance y la retroalimentación.");
+
+    /// <summary>Aviso al evaluador: la etapa que tiene asignada entró en una ronda de revisión (el estudiante la envió o la reenvió).</summary>
+    public static (string Asunto, string Cuerpo) EtapaParaEvaluar(EtapaTipo tipo, int ronda) => (
+        $"SGT-Tesis: etapa {NombreEtapa(tipo)} lista para evaluar",
+        ronda > 1
+            ? $"La etapa {NombreEtapa(tipo)} que tiene asignada fue corregida y reenviada (ronda {ronda}).\n\nIngrese al sistema para volver a evaluarla y emitir su veredicto."
+            : $"La etapa {NombreEtapa(tipo)} que tiene asignada fue enviada a revisión.\n\nIngrese al sistema para evaluarla y emitir su veredicto."
+    );
+
     /// <summary>Correo con el enlace (o el código, si no hay URL configurada) para restablecer la contraseña.</summary>
     public static (string Asunto, string Cuerpo) RestablecerPassword(string? plantillaUrl, string token)
     {

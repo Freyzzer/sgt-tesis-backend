@@ -4,6 +4,7 @@ using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
 using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.Common;
 using SGT.Tesis.Domain.Evaluacion;
 using SGT.Tesis.Domain.GestionTesis;
@@ -31,6 +32,8 @@ public sealed class EmitirVeredictoHandler(
     ITesisRepository tesis,
     IAsignacionRepository asignaciones,
     IVeredictoRepository veredictos,
+    IUsuarioRepository usuarios,
+    INotificador notificador,
     ICurrentUser actual,
     IUnitOfWork unitOfWork,
     IAuditTrail audit,
@@ -61,6 +64,14 @@ public sealed class EmitirVeredictoHandler(
         var version = await veredictos.UltimaVersionAsync(etapa.Id, evaluadorId, cancellationToken) + 1;
         var veredicto = Veredicto.Crear(etapa.Id, evaluadorId, command.Concepto, command.Comentarios, version, etapa.Ronda);
         veredictos.Agregar(veredicto);
+
+        // El estudiante ve su proceso actualizado: se le avisa de cada evaluación (sin concepto ni comentarios en el correo).
+        if (await usuarios.ObtenerPorIdAsync(encontrada.StudentId, cancellationToken) is { } estudiante)
+        {
+            var (asunto, cuerpo) = Plantillas.VeredictoEmitido(etapa.Tipo, etapa.Ronda);
+            notificador.Encolar(estudiante.Correo, asunto, cuerpo);
+        }
+
         audit.Registrar(AccionesAuditoria.VeredictoEmitido, "Veredicto", veredicto.Id, encontrada.Id, $"{command.Concepto}, etapa {etapa.Tipo}, v{version}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

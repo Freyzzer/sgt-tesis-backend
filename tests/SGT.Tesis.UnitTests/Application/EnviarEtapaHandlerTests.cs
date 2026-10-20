@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.Decisiones;
+using SGT.Tesis.Domain.Evaluacion;
 using SGT.Tesis.Domain.GestionTesis;
 using SGT.Tesis.Domain.Identidad;
 using SGT.Tesis.UnitTests.Support;
@@ -46,6 +48,22 @@ public class EnviarEtapaHandlerTests
             Task.FromResult<IReadOnlyList<Decision>>([]);
 
         public void Agregar(Decision decision)
+        {
+        }
+    }
+
+    private sealed class SinAsignaciones : IAsignacionRepository
+    {
+        public Task<AsignacionEvaluador?> ObtenerActivaAsync(Guid etapaId, Guid evaluadorId, CancellationToken cancellationToken) =>
+            Task.FromResult<AsignacionEvaluador?>(null);
+
+        public Task<IReadOnlyList<AsignacionEvaluador>> ListarPorEtapaAsync(Guid etapaId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<AsignacionEvaluador>>([]);
+
+        public Task<bool> TieneAsignacionActivaEnTesisAsync(Guid evaluadorId, Guid tesisId, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+
+        public void Agregar(AsignacionEvaluador asignacion)
         {
         }
     }
@@ -111,6 +129,7 @@ public class EnviarEtapaHandlerTests
             new Repositorio(tesis),
             new DecisionesVacias(),
             new Administradores(),
+            new SinAsignaciones(),
             new NotificadorEnMemoria(),
             new Requisitos(faltantes),
             new Actual(estudiante, nameof(Rol.Estudiante)),
