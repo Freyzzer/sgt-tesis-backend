@@ -23,6 +23,12 @@ public sealed class Etapa : BaseEntity
     /// <summary>Momento del último envío a revisión; permite medir cuánto lleva esperando una validación.</summary>
     public DateTime? EnRevisionDesde { get; private set; }
 
+    /// <summary>
+    /// Ronda de evaluación actual: cada envío a revisión abre una nueva (la primera es la 1; 0 mientras no se ha enviado).
+    /// Los veredictos y las decisiones pertenecen a una ronda y solo los de la actual cuentan para aprobar (ADR-005).
+    /// </summary>
+    public int Ronda { get; private set; }
+
     /// <summary>Contador de cambios de estado; se usa como token de concurrencia optimista.</summary>
     public int Revision { get; private set; }
 
@@ -55,6 +61,7 @@ public sealed class Etapa : BaseEntity
 
         Estado = EstadoEtapa.EnRevision;
         EnRevisionDesde = utcNow;
+        Ronda++;
         Revision++;
     }
 

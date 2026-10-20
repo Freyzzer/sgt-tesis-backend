@@ -37,6 +37,7 @@ internal sealed class VeredictoConfiguration : IEntityTypeConfiguration<Veredict
         builder.Property(v => v.Concepto).IsRequired().HasConversion<int>();
         builder.Property(v => v.Comentarios).IsRequired().HasMaxLength(Veredicto.ComentariosMaxLength);
         builder.Property(v => v.Version).IsRequired();
+        builder.Property(v => v.Ronda).IsRequired();
 
         builder.HasOne<Etapa>().WithMany().HasForeignKey(v => v.EtapaId).OnDelete(DeleteBehavior.Restrict);
 
@@ -53,6 +54,7 @@ internal sealed class DecisionConfiguration : IEntityTypeConfiguration<Decision>
 
         builder.Property(d => d.Resultado).IsRequired().HasConversion<int>();
         builder.Property(d => d.Justificacion).HasMaxLength(Decision.JustificacionMaxLength);
+        builder.Property(d => d.Ronda).IsRequired();
         builder.Property(d => d.FechaUtc).IsRequired();
 
         builder.HasOne<Etapa>().WithMany().HasForeignKey(d => d.EtapaId).OnDelete(DeleteBehavior.Restrict);

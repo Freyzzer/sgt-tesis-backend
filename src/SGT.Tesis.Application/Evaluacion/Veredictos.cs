@@ -59,7 +59,7 @@ public sealed class EmitirVeredictoHandler(
         }
 
         var version = await veredictos.UltimaVersionAsync(etapa.Id, evaluadorId, cancellationToken) + 1;
-        var veredicto = Veredicto.Crear(etapa.Id, evaluadorId, command.Concepto, command.Comentarios, version);
+        var veredicto = Veredicto.Crear(etapa.Id, evaluadorId, command.Concepto, command.Comentarios, version, etapa.Ronda);
         veredictos.Agregar(veredicto);
         audit.Registrar(AccionesAuditoria.VeredictoEmitido, "Veredicto", veredicto.Id, encontrada.Id, $"{command.Concepto}, etapa {etapa.Tipo}, v{version}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -97,9 +97,10 @@ public sealed class ListarVeredictosHandler(ITesisRepository tesis, IVeredictoRe
             lista = lista.Where(v => v.EvaluadorId == actual.UserId);
         }
 
+        // Vigentes = el último veredicto de cada evaluador en la ronda actual.
         if (query.SoloVigentes)
         {
-            lista = lista.GroupBy(v => v.EvaluadorId).Select(g => g.OrderByDescending(v => v.Version).First());
+            lista = CalculoDeEvaluacion.VigentesDeLaRonda(lista, etapa.Ronda).Values;
         }
 
         return lista.OrderBy(v => v.EvaluadorId).ThenByDescending(v => v.Version).Select(VeredictoDto.Desde).ToList();

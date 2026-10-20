@@ -97,8 +97,10 @@ public sealed class TesisGrado : BaseEntity
     /// Aprobar abre la etapa siguiente (o finaliza la tesis tras la 7); observar devuelve la etapa al estudiante; rechazar
     /// devuelve la etapa al estudiante para que la corrija y reenvíe si la política lo permite (la tesis sigue en curso) o,
     /// si no, rechaza la tesis. Sin política se usan los valores acordados (<see cref="PoliticaEtapa.PorDefecto"/>).
+    /// Si la política exige unanimidad, aprobar requiere que todos los evaluadores activos tengan un veredicto Favorable en la
+    /// ronda actual (<paramref name="evaluacion"/>); sin evaluadores asignados el administrador puede aprobar directamente.
     /// </summary>
-    public Decision Decidir(EtapaTipo tipo, ResultadoDecision resultado, Guid administradorId, string? justificacion, DateTime utcNow, PoliticaEtapa? politica = null)
+    public Decision Decidir(EtapaTipo tipo, ResultadoDecision resultado, Guid administradorId, string? justificacion, DateTime utcNow, PoliticaEtapa? politica = null, ResumenEvaluacion? evaluacion = null)
     {
         var reglas = politica ?? PoliticaEtapa.PorDefecto(tipo);
 
@@ -121,7 +123,15 @@ public sealed class TesisGrado : BaseEntity
             throw new TransicionInvalidaException("La etapa anterior debe estar aprobada.");
         }
 
-        var decision = Decision.Crear(etapa.Id, administradorId, resultado, justificacion, utcNow);
+        if (etapa.Estado == EstadoEtapa.EnRevision && resultado == ResultadoDecision.Aprobada && reglas.ExigeUnanimidad
+            && evaluacion is { HayEvaluadores: true, EsUnanime: false })
+        {
+            throw new DomainException(
+                $"Para aprobar la etapa, los {evaluacion.Activos} evaluadores deben haber emitido un veredicto Favorable en la ronda actual "
+                + $"({evaluacion.Favorables} de {evaluacion.Activos}). Puede observarla o rechazarla, o esperar a que terminen de evaluar.");
+        }
+
+        var decision = Decision.Crear(etapa.Id, administradorId, resultado, justificacion, utcNow, etapa.Ronda);
         etapa.Resolver(resultado, utcNow, reintentable: resultado == ResultadoDecision.Rechazada && reglas.PermiteReintento);
 
         switch (resultado)

@@ -115,8 +115,9 @@ public class AuditoriaEndpointsTests
     {
         using var factory = new ApiFactory();
         var (estudianteId, correo) = await factory.SembrarUsuarioAsync(Rol.Estudiante);
-        var (evaluadorId, _) = await factory.SembrarUsuarioAsync(Rol.Evaluador);
+        var (evaluadorId, correoEvaluador) = await factory.SembrarUsuarioAsync(Rol.Evaluador);
         using var estudiante = await factory.ClienteComoAsync(correo);
+        using var evaluador = await factory.ClienteComoAsync(correoEvaluador);
         using var admin = await factory.ClienteAdministradorAsync();
         // En la realidad cada acción ocurre en un instante distinto; el reloj de prueba es fijo, así que se avanza.
         factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
@@ -128,12 +129,14 @@ public class AuditoriaEndpointsTests
         factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
         await admin.PostAsJsonAsync($"{etapa}/evaluadores", new { evaluadorId }, cancellationToken: TestContext.Current.CancellationToken);
         factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
+        await evaluador.PutAsJsonAsync($"{etapa}/veredicto", new { concepto = "Favorable", comentarios = "Cumple." }, cancellationToken: TestContext.Current.CancellationToken);
+        factory.Reloj.Avanzar(TimeSpan.FromSeconds(1));
         await admin.PostAsJsonAsync($"{etapa}/decisiones", new { resultado = "Aprobada" }, cancellationToken: TestContext.Current.CancellationToken);
 
         var historial = await Consultar(admin, $"?tesisId={tesisId}&pageSize=100");
         var acciones = Acciones(historial).Reverse().ToList();
 
-        Assert.Equal(["Tesis.Registrada", "Etapa.Enviada", "Evaluador.Asignado", "Decision.Registrada"], acciones);
+        Assert.Equal(["Tesis.Registrada", "Etapa.Enviada", "Evaluador.Asignado", "Veredicto.Emitido", "Decision.Registrada"], acciones);
         Assert.Equal(estudianteId, historial.GetProperty("items").EnumerateArray().Last().GetProperty("actorId").GetGuid());
     }
 

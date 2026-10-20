@@ -26,7 +26,7 @@ Las claves se leen de `appsettings.json`, `appsettings.<Ambiente>.json` y variab
 | `Dashboard:KpisCacheSegundos` | `Dashboard__KpisCacheSegundos` | No (30) | Vigencia en memoria de los KPIs (0 = sin caché; máx. 600). La cola de validación nunca se cachea. |
 | `Flujo:Etapas:<Etapa>:PermiteReintento` | `Flujo__Etapas__Pasantia__PermiteReintento` | No (`true`, salvo Pasantia y Articulo: `false`) | Si rechazar la etapa permite corregir y reenviar (la tesis sigue en curso) o es definitivo (la tesis queda rechazada). Ver `docs/PROCESO_DE_ETAPAS.md`. |
 | `Flujo:Etapas:<Etapa>:MaxEvaluadores` | `Flujo__Etapas__Consejo__MaxEvaluadores` | No (3) | Tope de evaluadores activos por etapa (1 a 10). |
-| `Flujo:Etapas:<Etapa>:ExigeUnanimidad` | `Flujo__Etapas__Consejo__ExigeUnanimidad` | No (`true`) | Si aprobar exige un veredicto *Favorable* de todos los evaluadores (se aplica con las rondas). |
+| `Flujo:Etapas:<Etapa>:ExigeUnanimidad` | `Flujo__Etapas__Consejo__ExigeUnanimidad` | No (`true`) | Si aprobar exige que **todos** los evaluadores activos tengan un veredicto *Favorable* en la **ronda actual**. Sin evaluadores asignados, el administrador aprueba directamente. |
 | `ForwardedHeaders:Habilitado`, `ForwardedHeaders:RedesConfiables` | `ForwardedHeaders__Habilitado`, `ForwardedHeaders__RedesConfiables__0` | Detrás de un proxy inverso | Con `true` exige las redes (CIDR) del proxy y solo confía en `X-Forwarded-For/Proto` de ellas. Desactivado por defecto. |
 | `Frontend:UrlRestablecerPassword` | `Frontend__UrlRestablecerPassword` | Recomendada | Plantilla de la pantalla de restablecimiento, con `{token}` (p. ej. `https://app.institucion.edu/restablecer?token={token}`). Vacía: el correo incluye solo el código. Debe ser http(s) absoluta. |
 | `Bootstrap:ExigirCambioPassword` | `Bootstrap__ExigirCambioPassword` | No (true) | Obliga al Administrador inicial a cambiar la contraseña en su primer acceso. |
@@ -76,7 +76,7 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 ## Evaluación y decisiones
 
 - **Asignaciones** (solo Administrador): `POST|GET /api/v1/tesis/{id}/etapas/{n}/evaluadores` y `DELETE .../evaluadores/{evaluadorId}`. El asignado debe ser un Evaluador activo; una asignación activa por evaluador y etapa (índice único filtrado). Al asignar, el evaluador ve la tesis y sus documentos; al retirarlo, deja de verlos.
-- **Veredictos** (solo el Evaluador asignado, con la etapa en revisión): `PUT .../etapas/{n}/veredicto` crea una **versión nueva** y conserva las anteriores; `GET .../veredictos[?soloVigentes=true]` (el Administrador ve todos; cada Evaluador, los suyos). Un veredicto **nunca** cambia el estado de la etapa.
+- **Veredictos** (solo el Evaluador asignado, con la etapa en revisión): `PUT .../etapas/{n}/veredicto` crea una **versión nueva** y conserva las anteriores; `GET .../veredictos[?soloVigentes=true]` (el Administrador ve todos; cada Evaluador, los suyos). Un veredicto **nunca** cambia el estado de la etapa por sí mismo; sí condiciona la decisión del administrador (ver *Rondas y unanimidad*). Cada veredicto lleva su `ronda`; `soloVigentes=true` devuelve el último de cada evaluador **en la ronda actual**.
 - **Decisiones** (solo Administrador): `POST .../etapas/{n}/decisiones` con `Aprobada`, `Observada` o `Rechazada`.
   - Solo desde `EnRevision` y sobre la etapa actual; observar y rechazar exigen justificación (≤ 2000).
   - `Aprobada` abre la etapa siguiente en `Pendiente`; tras la 7.ª la tesis queda `Finalizada`. `Observada` devuelve la etapa al estudiante, que corrige y reenvía. `Rechazada` rechaza la tesis (el estudiante puede registrar otra).
@@ -102,6 +102,12 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - Pendiente: enlace directo a la tesis en el correo (falta definir la URL pública del frontend) y plantillas HTML.
 
 ## Retroalimentación consolidada
+
+### Rondas y unanimidad (ADR-005)
+
+- Cada vez que el estudiante **envía** una etapa a revisión comienza una **ronda** (`etapa.ronda`: 0 antes del primer envío, luego 1, 2…). Los veredictos y las decisiones llevan la `ronda` en que se emitieron.
+- **Aprobar** una etapa exige que todos sus evaluadores activos tengan un veredicto *Favorable* **en la ronda actual**; si no, `422` con el mensaje «…(N de M)». Los veredictos de rondas anteriores se conservan como historial pero no cuentan. Observar y rechazar no tienen esa restricción. Una etapa sin evaluadores la aprueba el administrador directamente.
+- Se puede desactivar por etapa con `Flujo:Etapas:<Etapa>:ExigeUnanimidad=false`. Ver `docs/PROCESO_DE_ETAPAS.md`.
 
 `GET /api/v1/tesis/{id}/retroalimentacion` (dueño y Administrador): por etapa, las decisiones con su justificación y, **una vez decidida la etapa**, el veredicto vigente de cada evaluador de forma **anónima** (`Evaluador 1`, `Evaluador 2`…, sin identificadores ni correos). Antes de la decisión no se muestran veredictos.
 

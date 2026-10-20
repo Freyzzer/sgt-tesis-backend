@@ -113,6 +113,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
                     b.Property<int>("Resultado")
                         .HasColumnType("int");
 
+                    b.Property<int>("Ronda")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -197,6 +200,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("EvaluadorId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Ronda")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -308,6 +314,9 @@ namespace SGT.Tesis.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Revision")
                         .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.Property<int>("Ronda")
                         .HasColumnType("int");
 
                     b.Property<Guid>("TesisId")

@@ -72,7 +72,10 @@ public sealed class Veredicto : BaseEntity
 
     public int Version { get; private set; }
 
-    public static Veredicto Crear(Guid etapaId, Guid evaluadorId, ConceptoVeredicto concepto, string? comentarios, int version)
+    /// <summary>Ronda de la etapa en la que se emitió; solo los veredictos de la ronda actual cuentan para aprobar.</summary>
+    public int Ronda { get; private set; }
+
+    public static Veredicto Crear(Guid etapaId, Guid evaluadorId, ConceptoVeredicto concepto, string? comentarios, int version, int ronda = 1)
     {
         if (!Enum.IsDefined(concepto))
         {
@@ -84,6 +87,11 @@ public sealed class Veredicto : BaseEntity
             throw new DomainException("La versión debe ser mayor o igual a 1.");
         }
 
+        if (ronda < 1)
+        {
+            throw new DomainException("La ronda debe ser mayor o igual a 1.");
+        }
+
         return new Veredicto
         {
             EtapaId = Guard.NotEmpty(etapaId, nameof(EtapaId)),
@@ -91,6 +99,7 @@ public sealed class Veredicto : BaseEntity
             Concepto = concepto,
             Comentarios = Guard.Required(comentarios, ComentariosMaxLength, nameof(Comentarios)),
             Version = version,
+            Ronda = ronda,
         };
     }
 }

@@ -43,6 +43,7 @@ internal sealed class EtapaConfiguration : IEntityTypeConfiguration<Etapa>
         builder.Property(e => e.Estado).IsRequired().HasConversion<int>();
         builder.Property(e => e.FechaApertura).IsRequired();
 
+        builder.Property(e => e.Ronda).IsRequired();
         builder.Property(e => e.Revision).IsRequired().IsConcurrencyToken();
 
         builder.Ignore(e => e.EstaAbierta);

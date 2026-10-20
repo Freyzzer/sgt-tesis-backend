@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SGT.Tesis.Application.Auditoria;
 using SGT.Tesis.Application.Common.Abstractions;
 using SGT.Tesis.Application.Common.Exceptions;
+using SGT.Tesis.Application.Evaluacion;
 using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Domain.Decisiones;
@@ -34,6 +35,8 @@ public sealed class DecidirEtapaHandler(
     IDecisionRepository decisiones,
     IUsuarioRepository usuarios,
     IPoliticasDeEtapa politicas,
+    IAsignacionRepository asignaciones,
+    IVeredictoRepository veredictos,
     INotificador notificador,
     ICurrentUser actual,
     IClock clock,
@@ -50,7 +53,12 @@ public sealed class DecidirEtapaHandler(
 
         var tipo = (EtapaTipo)command.Etapa;
         var politica = politicas.Para(tipo);
-        var decision = encontrada.Decidir(tipo, command.Resultado, adminId, command.Justificacion, clock.UtcNow, politica);
+        var etapa = encontrada.ObtenerEtapa(tipo);
+        var evaluacion = CalculoDeEvaluacion.Resumir(
+            etapa,
+            await asignaciones.ListarPorEtapaAsync(etapa.Id, cancellationToken),
+            await veredictos.ListarPorEtapaAsync(etapa.Id, cancellationToken));
+        var decision = encontrada.Decidir(tipo, command.Resultado, adminId, command.Justificacion, clock.UtcNow, politica, evaluacion);
 
         decisiones.Agregar(decision);
 

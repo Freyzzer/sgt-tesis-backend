@@ -32,7 +32,10 @@ public sealed class Decision : BaseEntity
 
     public DateTime FechaUtc { get; private set; }
 
-    public static Decision Crear(Guid etapaId, Guid administradorId, ResultadoDecision resultado, string? justificacion, DateTime utcNow)
+    /// <summary>Ronda de la etapa sobre la que se decidió.</summary>
+    public int Ronda { get; private set; }
+
+    public static Decision Crear(Guid etapaId, Guid administradorId, ResultadoDecision resultado, string? justificacion, DateTime utcNow, int ronda = 1)
     {
         if (!Enum.IsDefined(resultado))
         {
@@ -58,6 +61,7 @@ public sealed class Decision : BaseEntity
             Resultado = resultado,
             Justificacion = string.IsNullOrEmpty(texto) ? null : texto,
             FechaUtc = utcNow,
+            Ronda = ronda < 1 ? 1 : ronda,
         };
     }
 }

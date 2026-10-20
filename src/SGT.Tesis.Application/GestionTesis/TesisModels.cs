@@ -7,12 +7,12 @@ using SGT.Tesis.Domain.Identidad;
 
 namespace SGT.Tesis.Application.GestionTesis;
 
-public sealed record EtapaDto(Guid Id, string Tipo, int Numero, string Estado, DateTime FechaApertura, DateTime? FechaCierre)
+public sealed record EtapaDto(Guid Id, string Tipo, int Numero, string Estado, int Ronda, DateTime FechaApertura, DateTime? FechaCierre)
 {
-    public static EtapaDto Desde(Etapa e) => new(e.Id, e.Tipo.ToString(), (int)e.Tipo, e.Estado.ToString(), e.FechaApertura, e.FechaCierre);
+    public static EtapaDto Desde(Etapa e) => new(e.Id, e.Tipo.ToString(), (int)e.Tipo, e.Estado.ToString(), e.Ronda, e.FechaApertura, e.FechaCierre);
 }
 
-public sealed record DecisionDto(Guid Id, int Etapa, string Resultado, string? Justificacion, Guid AdministradorId, DateTime FechaUtc)
+public sealed record DecisionDto(Guid Id, int Etapa, string Resultado, string? Justificacion, Guid AdministradorId, int Ronda, DateTime FechaUtc)
 {
     public static DecisionDto Desde(Decision d, TesisGrado tesis) => new(
         d.Id,
@@ -20,6 +20,7 @@ public sealed record DecisionDto(Guid Id, int Etapa, string Resultado, string? J
         d.Resultado.ToString(),
         d.Justificacion,
         d.AdministradorId,
+        d.Ronda,
         d.FechaUtc);
 }
 

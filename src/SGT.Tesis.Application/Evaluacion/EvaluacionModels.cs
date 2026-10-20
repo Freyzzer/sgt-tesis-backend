@@ -7,9 +7,9 @@ public sealed record AsignacionDto(Guid Id, Guid EtapaId, Guid EvaluadorId, bool
     public static AsignacionDto Desde(AsignacionEvaluador a) => new(a.Id, a.EtapaId, a.EvaluadorId, a.Activa, a.FechaAsignacion, a.FechaRetiro);
 }
 
-public sealed record VeredictoDto(Guid Id, Guid EtapaId, Guid EvaluadorId, string Concepto, string Comentarios, int Version, DateTime CreatedAt)
+public sealed record VeredictoDto(Guid Id, Guid EtapaId, Guid EvaluadorId, string Concepto, string Comentarios, int Version, int Ronda, DateTime CreatedAt)
 {
-    public static VeredictoDto Desde(Veredicto v) => new(v.Id, v.EtapaId, v.EvaluadorId, v.Concepto.ToString(), v.Comentarios, v.Version, v.CreatedAt);
+    public static VeredictoDto Desde(Veredicto v) => new(v.Id, v.EtapaId, v.EvaluadorId, v.Concepto.ToString(), v.Comentarios, v.Version, v.Ronda, v.CreatedAt);
 }
 
 public interface IAsignacionRepository
