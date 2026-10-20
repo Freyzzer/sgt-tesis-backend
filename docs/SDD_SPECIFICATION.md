@@ -455,9 +455,10 @@ Matriz de trazabilidad: cada prueba declara el ID del criterio (`[Trait("AC","11
 | ADR | Decisión | Estado |
 |---|---|---|
 | ADR-001 | Clean Architecture en 4 capas | Aceptada |
-| ADR-002 | SQL Server como motor (ya referenciado en el proyecto) | **Pendiente de confirmar** (issue #2) |
+| ADR-002 | SQL Server como motor (ya referenciado en el proyecto) | Aceptada (confirmado por el Product Owner el 2026-10-20) |
 | ADR-003 | Mediación y mapeo sin dependencias con licencia comercial | Aceptada |
-| ADR-004 | Identidad: ASP.NET Identity + JWT propio con refresh tokens rotados | Propuesta |
+| ADR-004 | Identidad: ASP.NET Identity + JWT propio con refresh tokens rotados | Propuesta; el Product Owner decidió SSO institucional (#45), que la sustituirá |
+| ADR-005 | Políticas de etapa configurables, rondas de evaluación y reapertura | Aceptada |
 | ADR-005 | Auditoría por interceptor; `Decision` inmutable | Propuesta |
 | ADR-006 | Outbox transaccional para correo | Propuesta |
 | ADR-007 | Almacenamiento de archivos tras `IFileStorage` | Propuesta |
