@@ -74,18 +74,7 @@ public class DecisionTests
         Assert.Equal(EstadoEtapa.EnRevision, tesis.EtapaActual.Estado);
     }
 
-    [Fact]
-    public void Rechazar_cierra_la_etapa_y_rechaza_la_tesis()
-    {
-        var tesis = EnRevision();
-
-        tesis.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Rechazada, Admin, "No cumple requisitos.", Ahora);
-
-        Assert.Equal(EstadoEtapa.Rechazado, tesis.EtapaActual.Estado);
-        Assert.Equal(EstadoTesis.Rechazada, tesis.Estado);
-        Assert.NotNull(tesis.EtapaActual.FechaCierre);
-        Assert.Throws<TransicionInvalidaException>(() => tesis.EnviarEtapaARevision(EtapaTipo.Estudiante, Ahora));
-    }
+    // El rechazo (reintentable o definitivo según la etapa) se prueba en RechazoPorEtapaTests.
 
     [Fact]
     [Trait("AC", "11.2")]

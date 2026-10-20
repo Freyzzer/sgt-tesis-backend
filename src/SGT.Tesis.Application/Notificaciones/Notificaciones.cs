@@ -62,7 +62,7 @@ public static class Plantillas
         "SGT-Tesis: su contraseña fue cambiada",
         "La contraseña de su cuenta fue cambiada y se cerraron sus sesiones abiertas.\n\nSi usted no realizó este cambio, comuníquese de inmediato con el administrador del sistema.");
 
-    public static (string Asunto, string Cuerpo) Decision(EtapaTipo tipo, ResultadoDecision resultado) => resultado switch
+    public static (string Asunto, string Cuerpo) Decision(EtapaTipo tipo, ResultadoDecision resultado, bool reintentable = false) => resultado switch
     {
         ResultadoDecision.Aprobada => (
             $"SGT-Tesis: su etapa {NombreEtapa(tipo)} fue aprobada",
@@ -70,6 +70,9 @@ public static class Plantillas
         ResultadoDecision.Observada => (
             $"SGT-Tesis: su etapa {NombreEtapa(tipo)} tiene observaciones",
             $"La etapa {NombreEtapa(tipo)} de su tesis fue observada.\n\nIngrese al sistema para revisar la retroalimentación, hacer las correcciones y reenviarla."),
+        ResultadoDecision.Rechazada when reintentable => (
+            $"SGT-Tesis: su etapa {NombreEtapa(tipo)} fue rechazada",
+            $"La etapa {NombreEtapa(tipo)} de su tesis fue rechazada, pero puede corregirla y volver a enviarla.\n\nIngrese al sistema para revisar la retroalimentación."),
         _ => (
             $"SGT-Tesis: su etapa {NombreEtapa(tipo)} fue rechazada",
             $"La etapa {NombreEtapa(tipo)} de su tesis fue rechazada.\n\nIngrese al sistema para consultar el detalle."),

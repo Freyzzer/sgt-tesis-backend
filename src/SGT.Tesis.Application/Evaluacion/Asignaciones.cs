@@ -27,6 +27,7 @@ public sealed class AsignarEvaluadorHandler(
     ITesisRepository tesis,
     IUsuarioRepository usuarios,
     IAsignacionRepository asignaciones,
+    IPoliticasDeEtapa politicas,
     INotificador notificador,
     ICurrentUser actual,
     IClock clock,
@@ -58,6 +59,13 @@ public sealed class AsignarEvaluadorHandler(
         if (await asignaciones.ObtenerActivaAsync(etapa.Id, evaluador.Id, cancellationToken) is not null)
         {
             throw new ConflictoException("El evaluador ya está asignado a esta etapa.");
+        }
+
+        var maximo = politicas.Para(etapa.Tipo).MaxEvaluadores;
+
+        if ((await asignaciones.ListarPorEtapaAsync(etapa.Id, cancellationToken)).Count(a => a.Activa) >= maximo)
+        {
+            throw new DomainException($"La etapa ya tiene el máximo de {maximo} evaluadores. Retire a uno antes de asignar otro.");
         }
 
         var asignacion = AsignacionEvaluador.Crear(etapa.Id, evaluador.Id, adminId, clock.UtcNow);

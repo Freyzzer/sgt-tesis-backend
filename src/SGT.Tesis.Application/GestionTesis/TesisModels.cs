@@ -44,6 +44,12 @@ public sealed record TesisDto(
         (decisiones ?? []).OrderBy(d => d.FechaUtc).Select(d => DecisionDto.Desde(d, t)).ToList());
 }
 
+/// <summary>Reglas configurables de cada etapa (ver <c>Flujo:Etapas</c> y ADR-005).</summary>
+public interface IPoliticasDeEtapa
+{
+    PoliticaEtapa Para(EtapaTipo tipo);
+}
+
 /// <summary>Requisitos documentales de cada etapa (ver <c>Documentos:Requisitos</c>).</summary>
 public interface IRequisitosDocumentales
 {

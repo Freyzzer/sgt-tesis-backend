@@ -11,6 +11,7 @@ using SGT.Tesis.Application.GestionTesis;
 using SGT.Tesis.Application.Notificaciones;
 using SGT.Tesis.Application.Reportes;
 using SGT.Tesis.Infrastructure.Documentos;
+using SGT.Tesis.Infrastructure.Flujo;
 using SGT.Tesis.Infrastructure.Identity;
 using SGT.Tesis.Infrastructure.Notificaciones;
 using SGT.Tesis.Infrastructure.Persistence;
@@ -80,6 +81,9 @@ public static class DependencyInjection
         services.AddScoped<ITesisRepository, TesisRepository>();
         services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();
         services.AddOptions<DocumentosOptions>().Bind(configuration.GetSection(DocumentosOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<FlujoOptions>, FlujoOptionsValidator>();
+        services.AddOptions<FlujoOptions>().Bind(configuration.GetSection(FlujoOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IPoliticasDeEtapa, PoliticasDeEtapaConfigurables>();
         services.AddSingleton<IValidateOptions<StorageOptions>, StorageOptionsValidator>();
         services.AddOptions<StorageOptions>().Bind(configuration.GetSection(StorageOptions.SectionName)).ValidateOnStart();
 

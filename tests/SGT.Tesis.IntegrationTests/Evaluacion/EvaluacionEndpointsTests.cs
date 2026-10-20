@@ -398,9 +398,16 @@ public class EvaluacionEndpointsTests : IClassFixture<ApiFactory>
 
     [Fact]
     [Trait("AC", "11.4")]
-    public async Task Rechazar_rechaza_la_tesis_y_el_estudiante_puede_registrar_una_nueva()
+    public async Task Rechazar_con_politica_definitiva_rechaza_la_tesis_y_el_estudiante_puede_registrar_una_nueva()
     {
-        var e = await EscenarioEnRevisionAsync();
+        // El comportamiento por defecto (rechazo reintentable) se prueba en PoliticasDeEtapaTests.
+        using var factory = new ApiFactory();
+        factory.Configuracion["Flujo:Etapas:Estudiante:PermiteReintento"] = "false";
+        var (_, correo) = await factory.SembrarUsuarioAsync(Rol.Estudiante);
+        var estudiante = await factory.ClienteComoAsync(correo);
+        var tesisId = (await (await estudiante.PostAsJsonAsync(Tesis, new { titulo = "Titulo", resumen = "Resumen" }, cancellationToken: TestContext.Current.CancellationToken)).LeerJsonAsync()).GetProperty("id").GetGuid();
+        await estudiante.PostAsync($"{Tesis}/{tesisId}/etapas/1/enviar", null, TestContext.Current.CancellationToken);
+        var e = new Escenario(tesisId, estudiante, await factory.ClienteAdministradorAsync());
 
         var respuesta = await Decidir(e.Admin, e.TesisId, "Rechazada", "No cumple los requisitos.");
         var tesis = await respuesta.LeerJsonAsync();

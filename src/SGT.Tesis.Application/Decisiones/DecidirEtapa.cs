@@ -33,6 +33,7 @@ public sealed class DecidirEtapaHandler(
     ITesisRepository tesis,
     IDecisionRepository decisiones,
     IUsuarioRepository usuarios,
+    IPoliticasDeEtapa politicas,
     INotificador notificador,
     ICurrentUser actual,
     IClock clock,
@@ -48,13 +49,14 @@ public sealed class DecidirEtapaHandler(
             ?? throw new NoEncontradoException("La tesis no existe.");
 
         var tipo = (EtapaTipo)command.Etapa;
-        var decision = encontrada.Decidir(tipo, command.Resultado, adminId, command.Justificacion, clock.UtcNow);
+        var politica = politicas.Para(tipo);
+        var decision = encontrada.Decidir(tipo, command.Resultado, adminId, command.Justificacion, clock.UtcNow, politica);
 
         decisiones.Agregar(decision);
 
         if (await usuarios.ObtenerPorIdAsync(encontrada.StudentId, cancellationToken) is { } estudiante)
         {
-            var (asunto, cuerpo) = Plantillas.Decision(tipo, command.Resultado);
+            var (asunto, cuerpo) = Plantillas.Decision(tipo, command.Resultado, politica.PermiteReintento);
             notificador.Encolar(estudiante.Correo, asunto, cuerpo);
         }
 

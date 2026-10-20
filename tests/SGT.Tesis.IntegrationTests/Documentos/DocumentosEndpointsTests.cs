@@ -202,10 +202,35 @@ public class DocumentosEndpointsTests : IClassFixture<ApiFactory>
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var etapa = await db.Tesis.Where(t => t.Id == tesisId).SelectMany(t => t.Etapas).SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
             db.Entry(etapa).Property(nameof(Etapa.Estado)).CurrentValue = estado;
+
+            if (estado == EstadoEtapa.Rechazado)
+            {
+                // Rechazo definitivo: la tesis queda rechazada. (Con la tesis en curso es un rechazo reintentable.)
+                var tesis = await db.Tesis.SingleAsync(t => t.Id == tesisId, TestContext.Current.CancellationToken);
+                db.Entry(tesis).Property(nameof(TesisGrado.Estado)).CurrentValue = EstadoTesis.Rechazada;
+            }
+
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         Assert.Equal(HttpStatusCode.Conflict, (await cliente.PostAsync(Url(tesisId), Formulario(Pdf(), "a.pdf"), TestContext.Current.CancellationToken)).StatusCode);
+    }
+
+    [Fact]
+    [Trait("AC", "7.5")]
+    public async Task Una_etapa_rechazada_con_reintento_admite_documentos_mientras_la_tesis_sigue_en_curso()
+    {
+        var (_, cliente, tesisId) = await EstudianteConTesisAsync();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var etapa = await db.Tesis.Where(t => t.Id == tesisId).SelectMany(t => t.Etapas).SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
+            db.Entry(etapa).Property(nameof(Etapa.Estado)).CurrentValue = EstadoEtapa.Rechazado;
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(HttpStatusCode.Created, (await cliente.PostAsync(Url(tesisId), Formulario(Pdf(), "a.pdf"), TestContext.Current.CancellationToken)).StatusCode);
     }
 
     [Fact]

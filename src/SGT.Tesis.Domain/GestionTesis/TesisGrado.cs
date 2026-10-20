@@ -53,6 +53,11 @@ public sealed class TesisGrado : BaseEntity
     /// <summary>Valida que la etapa exista y admita nuevos documentos (INV-7).</summary>
     public Etapa ExigirEtapaEditable(EtapaTipo tipo)
     {
+        if (Estado != EstadoTesis.EnCurso)
+        {
+            throw new TransicionInvalidaException("La tesis ya no está en curso.");
+        }
+
         var etapa = ObtenerEtapa(tipo);
 
         if (!etapa.AdmiteDocumentos)
@@ -89,10 +94,14 @@ public sealed class TesisGrado : BaseEntity
 
     /// <summary>
     /// Registra la decisión del Administrador sobre la etapa actual, que debe estar en revisión.
-    /// Aprobar abre la etapa siguiente (o finaliza la tesis tras la 7); rechazar rechaza la tesis; observar devuelve la etapa al estudiante.
+    /// Aprobar abre la etapa siguiente (o finaliza la tesis tras la 7); observar devuelve la etapa al estudiante; rechazar
+    /// devuelve la etapa al estudiante para que la corrija y reenvíe si la política lo permite (la tesis sigue en curso) o,
+    /// si no, rechaza la tesis. Sin política se usan los valores acordados (<see cref="PoliticaEtapa.PorDefecto"/>).
     /// </summary>
-    public Decision Decidir(EtapaTipo tipo, ResultadoDecision resultado, Guid administradorId, string? justificacion, DateTime utcNow)
+    public Decision Decidir(EtapaTipo tipo, ResultadoDecision resultado, Guid administradorId, string? justificacion, DateTime utcNow, PoliticaEtapa? politica = null)
     {
+        var reglas = politica ?? PoliticaEtapa.PorDefecto(tipo);
+
         if (Estado != EstadoTesis.EnCurso)
         {
             throw new TransicionInvalidaException("La tesis ya no está en curso.");
@@ -113,7 +122,7 @@ public sealed class TesisGrado : BaseEntity
         }
 
         var decision = Decision.Crear(etapa.Id, administradorId, resultado, justificacion, utcNow);
-        etapa.Resolver(resultado, utcNow);
+        etapa.Resolver(resultado, utcNow, reintentable: resultado == ResultadoDecision.Rechazada && reglas.PermiteReintento);
 
         switch (resultado)
         {
@@ -123,7 +132,7 @@ public sealed class TesisGrado : BaseEntity
             case ResultadoDecision.Aprobada:
                 _etapas.Add(Etapa.Abrir(Id, tipo + 1, utcNow));
                 break;
-            case ResultadoDecision.Rechazada:
+            case ResultadoDecision.Rechazada when !reglas.PermiteReintento:
                 Estado = EstadoTesis.Rechazada;
                 break;
         }

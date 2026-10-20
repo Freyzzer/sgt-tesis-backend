@@ -173,6 +173,7 @@ public class DashboardEndpointsTests
     public async Task Los_kpis_resumen_decisiones_tesis_por_etapa_y_tiempos()
     {
         using var factory = new ApiFactory();
+        factory.Configuracion["Flujo:Etapas:Estudiante:PermiteReintento"] = "false"; // aquí el rechazo debe cerrar la tesis
         var inicio = DateTime.UtcNow;
         var aprobada = await NuevaTesisAsync(factory, enviar: false);
         var observada = await NuevaTesisAsync(factory, enviar: false);
@@ -384,7 +385,7 @@ public class DashboardEndpointsTests
         {
             var t = TesisGrado.Crear(unEstudiante, $"Rechazada {i}", "Resumen", ahora.AddDays(-60));
             t.EnviarEtapaARevision(EtapaTipo.Estudiante, ahora.AddDays(-50));
-            decisiones.Add(t.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Rechazada, admin, "No cumple.", ahora.AddDays(-45)));
+            decisiones.Add(t.Decidir(EtapaTipo.Estudiante, ResultadoDecision.Rechazada, admin, "No cumple.", ahora.AddDays(-45), new PoliticaEtapa(PermiteReintento: false, MaxEvaluadores: 3, ExigeUnanimidad: true)));
             tesis.Add(t);
         }
 

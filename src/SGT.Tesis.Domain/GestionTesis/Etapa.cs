@@ -26,11 +26,14 @@ public sealed class Etapa : BaseEntity
     /// <summary>Contador de cambios de estado; se usa como token de concurrencia optimista.</summary>
     public int Revision { get; private set; }
 
-    /// <summary>Una etapa está abierta mientras no haya sido aprobada ni rechazada.</summary>
+    /// <summary>Una etapa está abierta mientras no haya sido aprobada ni rechazada (un rechazo reintentable se reabre al reenviar).</summary>
     public bool EstaAbierta => Estado is EstadoEtapa.Pendiente or EstadoEtapa.EnRevision or EstadoEtapa.Observado;
 
-    /// <summary>Solo se pueden cargar documentos mientras la etapa está Pendiente u Observada.</summary>
-    public bool AdmiteDocumentos => Estado is EstadoEtapa.Pendiente or EstadoEtapa.Observado;
+    /// <summary>
+    /// Se pueden cargar documentos mientras la etapa está Pendiente u Observada, o Rechazada. En este último caso solo si la
+    /// tesis sigue en curso (rechazo reintentable); <see cref="TesisGrado"/> lo garantiza.
+    /// </summary>
+    public bool AdmiteDocumentos => Estado is EstadoEtapa.Pendiente or EstadoEtapa.Observado or EstadoEtapa.Rechazado;
 
     internal static Etapa Abrir(Guid tesisId, EtapaTipo tipo, DateTime utcNow) => new()
     {
@@ -40,10 +43,10 @@ public sealed class Etapa : BaseEntity
         FechaApertura = utcNow,
     };
 
-    /// <summary>Pendiente u Observado → EnRevision.</summary>
+    /// <summary>Pendiente, Observado o Rechazado (reintento) → EnRevision.</summary>
     internal void EnviarARevision(DateTime utcNow)
     {
-        if (Estado is not (EstadoEtapa.Pendiente or EstadoEtapa.Observado))
+        if (Estado is not (EstadoEtapa.Pendiente or EstadoEtapa.Observado or EstadoEtapa.Rechazado))
         {
             throw new TransicionInvalidaException(Estado == EstadoEtapa.EnRevision
                 ? "La etapa ya está en revisión."
@@ -55,8 +58,11 @@ public sealed class Etapa : BaseEntity
         Revision++;
     }
 
-    /// <summary>EnRevision → Aprobado, Observado o Rechazado, según la decisión del Administrador.</summary>
-    internal void Resolver(ResultadoDecision resultado, DateTime utcNow)
+    /// <summary>
+    /// EnRevision → Aprobado, Observado o Rechazado, según la decisión del Administrador. Un rechazo reintentable
+    /// (<paramref name="reintentable"/>) no cierra la etapa: el estudiante puede corregir y reenviar.
+    /// </summary>
+    internal void Resolver(ResultadoDecision resultado, DateTime utcNow, bool reintentable = false)
     {
         if (Estado != EstadoEtapa.EnRevision)
         {
@@ -73,7 +79,7 @@ public sealed class Etapa : BaseEntity
             _ => throw new DomainException("El resultado de la decisión no es válido."),
         };
 
-        if (Estado is EstadoEtapa.Aprobado or EstadoEtapa.Rechazado)
+        if (Estado == EstadoEtapa.Aprobado || (Estado == EstadoEtapa.Rechazado && !reintentable))
         {
             FechaCierre = utcNow;
         }
