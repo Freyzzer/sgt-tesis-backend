@@ -13,6 +13,8 @@ public sealed record EmitirVeredictoRequest(ConceptoVeredicto Concepto, string C
 
 public sealed record DecidirEtapaRequest(ResultadoDecision Resultado, string? Justificacion);
 
+public sealed record ReabrirEtapaRequest(string? Justificacion);
+
 public static class EvaluacionEndpoints
 {
     public static IEndpointRouteBuilder MapEvaluacionEndpoints(this IEndpointRouteBuilder routes)
@@ -82,6 +84,23 @@ public static class EvaluacionEndpoints
                 IQueryHandler<ListarVeredictosQuery, IReadOnlyList<VeredictoDto>> handler,
                 CancellationToken ct) => Results.Ok(await handler.HandleAsync(new ListarVeredictosQuery(id, numero, soloVigentes ?? false), ct)))
             .Produces<IReadOnlyList<VeredictoDto>>();
+
+        etapa.MapPost("/reabrir", async (
+                Guid id,
+                int numero,
+                ReabrirEtapaRequest body,
+                ICommandHandler<ReabrirEtapaCommand, TesisDto> handler,
+                IServiceProvider services,
+                CancellationToken ct) =>
+            {
+                var command = new ReabrirEtapaCommand(id, numero, body.Justificacion);
+                await ValidationFilter<ReabrirEtapaCommand>.ValidarAsync(command, services, ct);
+
+                return Results.Ok(await handler.HandleAsync(command, ct));
+            })
+            .Produces<TesisDto>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         etapa.MapPost("/decisiones", async (
                 Guid id,

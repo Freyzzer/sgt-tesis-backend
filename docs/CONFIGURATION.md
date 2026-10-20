@@ -80,10 +80,15 @@ dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-proje
 - **Veredictos** (solo el Evaluador asignado, con la etapa en revisión): `PUT .../etapas/{n}/veredicto` crea una **versión nueva** y conserva las anteriores; `GET .../veredictos[?soloVigentes=true]` (el Administrador ve todos; cada Evaluador, los suyos). Un veredicto **nunca** cambia el estado de la etapa por sí mismo; sí condiciona la decisión del administrador (ver *Rondas y unanimidad*). Cada veredicto lleva su `ronda`; `soloVigentes=true` devuelve el último de cada evaluador **en la ronda actual**.
 - **Decisiones** (solo Administrador): `POST .../etapas/{n}/decisiones` con `Aprobada`, `Observada` o `Rechazada`.
   - Solo desde `EnRevision` y sobre la etapa actual; observar y rechazar exigen justificación (≤ 2000).
-  - `Aprobada` abre la etapa siguiente en `Pendiente`; tras la 7.ª la tesis queda `Finalizada`. `Observada` devuelve la etapa al estudiante, que corrige y reenvía. `Rechazada` rechaza la tesis (el estudiante puede registrar otra).
+  - `Aprobada` abre la etapa siguiente en `Pendiente`; tras la 7.ª la tesis queda `Finalizada`. `Observada` devuelve la etapa al estudiante, que corrige y reenvía. `Rechazada` **devuelve la etapa al estudiante** para corregir y reenviar si la política de la etapa lo permite (por defecto, todas salvo Pasantía y Artículo; la tesis sigue en curso); si no, rechaza la tesis (el estudiante puede registrar otra).
   - La decisión y el cambio de estado se guardan en la misma transacción. La concurrencia es optimista (`Etapa.Revision`): la segunda de dos decisiones simultáneas recibe 409.
   - Las decisiones son **inmutables**: la aplicación rechaza modificarlas o borrarlas y `scripts/db/03-deny-immutable-tables.sql` lo impide también en la base de datos.
   - La tesis expone su línea de tiempo de decisiones con justificación (la ve el estudiante).
+- **Reapertura** (solo Administrador): `POST .../etapas/{n}/reabrir` con `{ "justificacion": "…" }` (obligatoria, ≤ 2000).
+  - Solo sobre la etapa actual y si está `Rechazado` (también un rechazo **definitivo**): la tesis vuelve a `EnCurso`, la etapa queda `Observado` y el estudiante corrige y reenvía (nueva ronda).
+  - Queda como una decisión inmutable con resultado `Reabierta` (visible en la línea de tiempo y en la retroalimentación), se audita (`Etapa.Reabierta`) y se avisa al estudiante por correo (sin la justificación).
+  - Si el rechazo cerró la tesis y el estudiante ya registró otra, responde **409** (solo puede haber una tesis en curso).
+  - `POST .../decisiones` no acepta `Reabierta` (400). Los indicadores de aprobación no cuentan las reaperturas.
 
 ## Auditoría
 

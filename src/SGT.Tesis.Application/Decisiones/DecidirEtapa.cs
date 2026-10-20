@@ -19,6 +19,7 @@ public sealed class DecidirEtapaCommandValidator : AbstractValidator<DecidirEtap
     {
         RuleFor(x => x.Etapa).Must(n => Enum.IsDefined((EtapaTipo)n)).WithMessage("La etapa debe estar entre 1 y 7.");
         RuleFor(x => x.Resultado).IsInEnum();
+        RuleFor(x => x.Resultado).NotEqual(ResultadoDecision.Reabierta).WithMessage("Para reabrir una etapa use la operación de reapertura.");
         RuleFor(x => x.Justificacion).MaximumLength(Decision.JustificacionMaxLength);
         RuleFor(x => x.Justificacion)
             .NotEmpty().WithMessage("La justificación es obligatoria al observar o rechazar una etapa.")

@@ -72,6 +72,27 @@ public sealed class TesisGrado : BaseEntity
         return etapa;
     }
 
+    /// <summary>
+    /// El administrador devuelve al estudiante una etapa rechazada, aunque el rechazo fuera definitivo, para que la corrija y
+    /// reenvíe (ADR-005). La tesis vuelve a estar en curso y la reapertura queda como una decisión inmutable más.
+    /// </summary>
+    public Decision Reabrir(EtapaTipo tipo, Guid administradorId, string? justificacion, DateTime utcNow)
+    {
+        var etapa = ObtenerEtapa(tipo);
+
+        if (etapa.Tipo != EtapaActual.Tipo)
+        {
+            throw new TransicionInvalidaException("La etapa indicada no es la etapa actual de la tesis.");
+        }
+
+        // Valida el estado (solo Rechazado) y la justificación antes de modificar nada.
+        var decision = Decision.Crear(etapa.Id, administradorId, ResultadoDecision.Reabierta, justificacion, utcNow, etapa.Ronda);
+        etapa.Reabrir();
+        Estado = EstadoTesis.EnCurso;
+
+        return decision;
+    }
+
     /// <summary>Envía a revisión la etapa indicada, que debe ser la actual y estar Pendiente u Observada.</summary>
     public Etapa EnviarEtapaARevision(EtapaTipo tipo, DateTime utcNow)
     {
@@ -103,6 +124,11 @@ public sealed class TesisGrado : BaseEntity
     public Decision Decidir(EtapaTipo tipo, ResultadoDecision resultado, Guid administradorId, string? justificacion, DateTime utcNow, PoliticaEtapa? politica = null, ResumenEvaluacion? evaluacion = null)
     {
         var reglas = politica ?? PoliticaEtapa.PorDefecto(tipo);
+
+        if (resultado == ResultadoDecision.Reabierta)
+        {
+            throw new DomainException("Para reabrir una etapa use la operación de reapertura.");
+        }
 
         if (Estado != EstadoTesis.EnCurso)
         {

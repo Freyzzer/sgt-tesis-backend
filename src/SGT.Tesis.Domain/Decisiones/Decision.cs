@@ -7,6 +7,9 @@ public enum ResultadoDecision
     Aprobada = 1,
     Observada = 2,
     Rechazada = 3,
+
+    /// <summary>El administrador devuelve al estudiante una etapa rechazada (ADR-005). No se usa en <c>Decidir</c>: tiene su propia operación.</summary>
+    Reabierta = 4,
 }
 
 /// <summary>

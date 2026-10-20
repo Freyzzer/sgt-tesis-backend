@@ -46,6 +46,11 @@ public static class Plantillas
         "SGT-Tesis: nueva asignación de evaluación",
         $"Se le asignó la evaluación de la etapa {NombreEtapa(tipo)} de una tesis.\n\nIngrese al sistema para ver el detalle y emitir su veredicto.");
 
+    /// <summary>Aviso al estudiante: el administrador reabrió una etapa rechazada para que la corrija y reenvíe.</summary>
+    public static (string Asunto, string Cuerpo) EtapaReabierta(EtapaTipo tipo) => (
+        $"SGT-Tesis: su etapa {NombreEtapa(tipo)} fue reabierta",
+        $"La etapa {NombreEtapa(tipo)} de su tesis fue reabierta.\n\nIngrese al sistema para revisar la retroalimentación, hacer las correcciones y reenviarla.");
+
     /// <summary>Aviso al estudiante: un evaluador emitió o actualizó su veredicto. No incluye el concepto ni los comentarios (se consultan en el sistema).</summary>
     public static (string Asunto, string Cuerpo) VeredictoEmitido(EtapaTipo tipo, int ronda) => (
         $"SGT-Tesis: nueva evaluación de su etapa {NombreEtapa(tipo)}",
@@ -83,6 +88,7 @@ public static class Plantillas
         ResultadoDecision.Observada => (
             $"SGT-Tesis: su etapa {NombreEtapa(tipo)} tiene observaciones",
             $"La etapa {NombreEtapa(tipo)} de su tesis fue observada.\n\nIngrese al sistema para revisar la retroalimentación, hacer las correcciones y reenviarla."),
+        ResultadoDecision.Reabierta => EtapaReabierta(tipo),
         ResultadoDecision.Rechazada when reintentable => (
             $"SGT-Tesis: su etapa {NombreEtapa(tipo)} fue rechazada",
             $"La etapa {NombreEtapa(tipo)} de su tesis fue rechazada, pero puede corregirla y volver a enviarla.\n\nIngrese al sistema para revisar la retroalimentación."),

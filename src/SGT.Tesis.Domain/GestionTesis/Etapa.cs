@@ -65,6 +65,19 @@ public sealed class Etapa : BaseEntity
         Revision++;
     }
 
+    /// <summary>Rechazado → Observado: el administrador devuelve la etapa al estudiante para que la corrija y reenvíe.</summary>
+    internal void Reabrir()
+    {
+        if (Estado != EstadoEtapa.Rechazado)
+        {
+            throw new TransicionInvalidaException("Solo se puede reabrir una etapa rechazada.");
+        }
+
+        Estado = EstadoEtapa.Observado;
+        FechaCierre = null;
+        Revision++;
+    }
+
     /// <summary>
     /// EnRevision → Aprobado, Observado o Rechazado, según la decisión del Administrador. Un rechazo reintentable
     /// (<paramref name="reintentable"/>) no cierra la etapa: el estudiante puede corregir y reenviar.

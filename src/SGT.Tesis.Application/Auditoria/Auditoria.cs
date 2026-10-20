@@ -31,6 +31,7 @@ public static class AccionesAuditoria
     public const string EvaluadorRetirado = "Evaluador.Retirado";
     public const string VeredictoEmitido = "Veredicto.Emitido";
     public const string DecisionRegistrada = "Decision.Registrada";
+    public const string EtapaReabierta = "Etapa.Reabierta";
     public const string ReporteExportado = "Reporte.Exportado";
 }
 
