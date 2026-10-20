@@ -75,7 +75,7 @@ Cada fila es un issue en GitHub. **Bloquea producción** = no se debe salir a pr
 | Issue | Tarea | Bloquea producción | Depende de |
 |---|---|:---:|---|
 | #49 | **Frontend**: cliente web (incluye pantalla de restablecimiento de contraseña) | **Sí** | Construido en [sgt-tesis-frontend](https://github.com/CSA-DanielVillamizar/sgt-tesis-frontend) (Angular 21, los tres roles, probado de extremo a extremo contra esta API). Falta validación con usuarios reales, despliegue y definir el dominio para `Frontend__UrlRestablecerPassword` |
-| #50 | Exportar el dashboard a CSV (FR-16) | No | — |
+| #50 | ~~Exportar el dashboard a CSV (FR-16)~~ | No | **Hecho** en el backend (`/dashboard/kpis/exportar` y `/dashboard/cola-validacion/exportar`); falta el botón en el frontend |
 | #51 | Administrar notificaciones fallidas y enlace a la tesis en los correos | No | URL del frontend (#49) |
 | #52 | Política de retención y archivado de auditoría y notificaciones | No | Área jurídica |
 | #53 | Escalado horizontal: caché de KPIs y límite de solicitudes compartidos | No | Solo si hay varias instancias |

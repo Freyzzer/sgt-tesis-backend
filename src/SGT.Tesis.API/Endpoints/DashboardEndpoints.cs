@@ -27,6 +27,29 @@ public static class DashboardEndpoints
             .AddEndpointFilter<ValidationFilter<ListarColaValidacionQuery>>()
             .Produces<PagedResult<ItemColaValidacionDto>>();
 
+        // Descargas CSV (FR-16). El separador por defecto es la coma; Excel en español prefiere ?separador=PuntoYComa.
+        group.MapGet("/kpis/exportar", async (
+                [AsParameters] ExportarKpisCsvQuery query,
+                IQueryHandler<ExportarKpisCsvQuery, ArchivoCsv> handler,
+                CancellationToken ct) =>
+            {
+                var archivo = await handler.HandleAsync(query, ct);
+                return Results.File(archivo.Contenido, "text/csv; charset=utf-8", archivo.NombreArchivo);
+            })
+            .AddEndpointFilter<ValidationFilter<ExportarKpisCsvQuery>>()
+            .Produces(StatusCodes.Status200OK, contentType: "text/csv");
+
+        group.MapGet("/cola-validacion/exportar", async (
+                [AsParameters] ExportarColaCsvQuery query,
+                IQueryHandler<ExportarColaCsvQuery, ArchivoCsv> handler,
+                CancellationToken ct) =>
+            {
+                var archivo = await handler.HandleAsync(query, ct);
+                return Results.File(archivo.Contenido, "text/csv; charset=utf-8", archivo.NombreArchivo);
+            })
+            .AddEndpointFilter<ValidationFilter<ExportarColaCsvQuery>>()
+            .Produces(StatusCodes.Status200OK, contentType: "text/csv");
+
         return routes;
     }
 }
