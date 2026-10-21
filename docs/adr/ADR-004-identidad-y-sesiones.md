@@ -24,4 +24,4 @@
 
 ## Alternativa
 
-SSO con OpenID Connect (Azure AD / institucional): elimina la gestión de contraseñas pero requiere que la institución provea el IdP. Si se confirma, se sustituye el login por validación del token del IdP y se mantiene la tabla `Usuarios` para roles locales.
+SSO con OpenID Connect (Azure AD / institucional): elimina la gestión de contraseñas pero requiere que la institución provea el IdP. Si se confirma, se sustituye el login por validación del token del IdP y se mantiene la tabla `Usuarios` para roles locales. El diseño propuesto está en el borrador ADR-006.
