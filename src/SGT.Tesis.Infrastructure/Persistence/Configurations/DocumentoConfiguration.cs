@@ -1,71 +1,28 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SGT.Tesis.Domain.Entities.Documents;
+using SGT.Tesis.Domain.GestionTesis;
 
 namespace SGT.Tesis.Infrastructure.Persistence.Configurations;
 
-/// <summary>
-/// Entity Framework Core configuration for the <see cref="Documento"/> entity.
-/// </summary>
-public class DocumentoConfiguration : IEntityTypeConfiguration<Documento>
+internal sealed class DocumentoConfiguration : IEntityTypeConfiguration<Documento>
 {
     public void Configure(EntityTypeBuilder<Documento> builder)
     {
-        builder.ToTable("documentos");
-
+        builder.ToTable("Documentos");
         builder.HasKey(d => d.Id);
 
-        builder.Property(d => d.Id)
-            .HasColumnName("id");
+        builder.Property(d => d.Categoria).IsRequired().HasMaxLength(Documento.CategoriaMaxLength);
+        builder.Property(d => d.CategoriaClave).IsRequired().HasMaxLength(Documento.CategoriaMaxLength);
+        builder.Property(d => d.NombreOriginal).IsRequired().HasMaxLength(Documento.NombreMaxLength);
+        builder.Property(d => d.NombreAlmacenado).IsRequired().HasMaxLength(Documento.NombreAlmacenadoMaxLength);
+        builder.Property(d => d.ContentType).IsRequired().HasMaxLength(Documento.ContentTypeMaxLength);
+        builder.Property(d => d.HashSha256).IsRequired().HasMaxLength(Documento.HashLength).IsFixedLength();
+        builder.Property(d => d.TamanoBytes).IsRequired();
+        builder.Property(d => d.Version).IsRequired();
 
-        builder.Property(d => d.ProyectoTesisId)
-            .IsRequired()
-            .HasColumnName("proyecto_tesis_id");
+        builder.HasOne<Etapa>().WithMany().HasForeignKey(d => d.EtapaId).OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(d => d.TipoDocumento)
-            .IsRequired()
-            .HasMaxLength(50)
-            .HasColumnName("tipo_documento");
-
-        builder.Property(d => d.Titulo)
-            .IsRequired()
-            .HasMaxLength(200)
-            .HasColumnName("titulo");
-
-        builder.Property(d => d.Descripcion)
-            .HasMaxLength(1000)
-            .HasColumnName("descripcion");
-
-        builder.Property(d => d.Estado)
-            .IsRequired()
-            .HasMaxLength(50)
-            .HasColumnName("estado");
-
-        builder.Property(d => d.Etapa)
-            .IsRequired()
-            .HasMaxLength(50)
-            .HasColumnName("etapa");
-
-        builder.Property(d => d.FechaCreacion)
-            .IsRequired()
-            .HasColumnName("fecha_creacion");
-
-        builder.Property(d => d.FechaModificacion)
-            .HasColumnName("fecha_modificacion");
-
-        builder.Property(d => d.EsActivo)
-            .IsRequired()
-            .HasColumnName("es_activo");
-
-        // Relationships
-        builder.HasOne(d => d.ProyectoTesis)
-            .WithMany(p => p.Documentos)
-            .HasForeignKey(d => d.ProyectoTesisId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasMany(d => d.Versiones)
-            .WithOne(v => v.Documento)
-            .HasForeignKey(v => v.DocumentoId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(d => new { d.EtapaId, d.CategoriaClave, d.Version }).IsUnique();
+        builder.HasIndex(d => d.NombreAlmacenado).IsUnique();
     }
 }

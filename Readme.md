@@ -1,219 +1,169 @@
 # SGT-Tesis — Backend
 
-Sistema de Gestión de Tesis (SGT-Tesis) para seguimiento institucional de procesos de investigación y grado. Este repositorio contiene el **backend** del sistema, construido en .NET 10 siguiendo Clean Architecture.
+Sistema de Gestión de Tesis (SGT-Tesis) para el seguimiento institucional de los procesos de investigación y grado. Este repositorio contiene el **backend**, construido en .NET 10 con Clean Architecture. Reglas de trabajo del equipo en [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## 📋 Tabla de contenidos
+## Contenido
 
-- [Descripción del proyecto](#descripción-del-proyecto)
+- [Qué hace](#qué-hace)
+- [Documentación](#documentación)
 - [Stack tecnológico](#stack-tecnológico)
 - [Arquitectura](#arquitectura)
-- [Requisitos previos](#requisitos-previos)
-- [Instalación y puesta en marcha](#instalación-y-puesta-en-marcha)
-- [Configuración de ambientes](#configuración-de-ambientes)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Roles del sistema](#roles-del-sistema)
-- [Flujo de tesis](#flujo-de-tesis)
-- [Comandos útiles](#comandos-útiles)
-- [Testing](#testing)
-- [Convenciones de Git](#convenciones-de-git)
-- [Roadmap / Sprints](#roadmap--sprints)
-- [Contribución](#contribución)
+- [Puesta en marcha](#puesta-en-marcha)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Roles y flujo de una tesis](#roles-y-flujo-de-una-tesis)
+- [Pruebas](#pruebas)
+- [Flujo de trabajo con Git](#flujo-de-trabajo-con-git)
 
-## Descripción del proyecto
+## Qué hace
 
-SGT-Tesis digitaliza el proceso institucional de tesis de grado, gestionando el flujo completo en 7 etapas (Estudiante → Propuesta → Consejo → Evaluación → Pasantía → Artículo → Requisitos Finales), con tres roles diferenciados: **Estudiante**, **Administrador** y **Evaluador**.
+Digitaliza el proceso de tesis de grado en **7 etapas** (Estudiante → Propuesta → Consejo → Evaluación → Pasantía → Artículo → Requisitos finales) con tres roles: **Estudiante**, **Evaluador** y **Administrador**. Prioriza trazabilidad, auditoría de decisiones y seguridad de los datos académicos.
 
-Es un sistema en **producción real** utilizado a nivel institucional, por lo que prioriza trazabilidad, auditoría de decisiones y seguridad sobre los datos académicos de los estudiantes.
+Funcionalidad disponible (API REST, `/api/v1`):
+
+| Área | Qué permite |
+|---|---|
+| Identidad | Login con JWT de corta vida, refresh tokens rotados, cierre de sesión, bloqueo tras 5 intentos fallidos |
+| Usuarios | El Administrador crea, activa/desactiva y cambia el rol de usuarios |
+| Tesis | El Estudiante registra su tesis, la consulta y envía cada etapa a revisión |
+| Documentos | Carga de PDF/DOCX validados por contenido, versionado por categoría, descarga segura |
+| Evaluación | Asignación de evaluadores por etapa y veredictos versionados |
+| Decisiones | Aprobar, observar o rechazar una etapa (inmutables, con justificación y concurrencia optimista) |
+| Retroalimentación | El estudiante ve decisiones y veredictos anónimos por etapa |
+| Auditoría | Registro inmutable de las acciones relevantes, consultable por el Administrador |
+| Notificaciones | Correos mediante outbox transaccional con reintentos |
+| Dashboard | KPIs y cola de validación para el Administrador |
+| Operación | Health checks, imágenes Docker, CI/CD, pruebas de carga |
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | **Estado del proyecto**, supuestos aplicados, pendientes y preguntas para el Product Owner |
+| [`docs/SDD_SPECIFICATION.md`](docs/SDD_SPECIFICATION.md) (y `.docx`) | Especificación: requerimientos, historias de usuario, criterios de aceptación y arquitectura |
+| [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) | Variables de configuración por ambiente, endpoints por área, resultados de carga |
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Runbook: despliegue, migraciones, respaldo y restauración, incidentes |
+| [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) | Revisión de seguridad, controles existentes y riesgos residuales |
+| [`docs/DATABASE.md`](docs/DATABASE.md) | Base de datos por ambiente, usuarios de mínimo privilegio |
+| [`docs/DATABASE_PROVISIONING.md`](docs/DATABASE_PROVISIONING.md) | Opciones de alojamiento (gratuitas y de pago) y procedimiento para crear cada ambiente |
+| [`docs/adr/`](docs/adr) | Decisiones de arquitectura (ADR-003 mediación y mapeo, ADR-004 identidad) |
+| [`docs/SYSTEM_SPEC_AND_GAP_ANALYSIS.md`](docs/SYSTEM_SPEC_AND_GAP_ANALYSIS.md) | Auditoría inicial del repositorio (histórica) |
+| [`docs/git-workflow.pdf`](docs/git-workflow.pdf) | Guía de ramas, commits y Pull Requests |
 
 ## Stack tecnológico
 
 | Componente | Tecnología |
 |---|---|
-| Framework | .NET 10 (LTS) |
-| Lenguaje | C# 14 |
-| API | ASP.NET Core Web API |
-| ORM | Entity Framework Core 10 |
-| Base de datos | *(definir según ambiente — ver [Configuración de ambientes](#configuración-de-ambientes))* |
-| Autenticación | JWT + Refresh Tokens |
-| Mediación / CQRS | MediatR |
-| Validaciones | FluentValidation |
-| Mapeo de objetos | AutoMapper |
-| Logging | Serilog |
-| Documentación de API | Swashbuckle (Swagger) |
-| Contenerización | Docker |
-| CI/CD | GitHub Actions |
+| Plataforma | .NET 10, C# 14, ASP.NET Core (minimal APIs) |
+| Datos | Entity Framework Core 10 sobre SQL Server |
+| Autenticación | JWT (HS256) + refresh tokens propios; PBKDF2 para contraseñas |
+| Validación | FluentValidation |
+| Logging | Serilog (consola, con correlación por solicitud) |
+| Correo | MailKit (SMTP) |
+| Documentación de API | OpenAPI + Swagger (solo en Development) |
+| Pruebas | xUnit v3 sobre Microsoft Testing Platform, NetArchTest, SQLite en memoria; k6 para carga |
+| Contenedores y CI/CD | Docker, GitHub Actions, GHCR |
+
+> No se usan MediatR ni AutoMapper (licenciamiento comercial); ver [ADR-003](docs/adr/ADR-003-mediacion-y-mapeo.md).
 
 ## Arquitectura
 
-El proyecto sigue **Clean Architecture** en 4 capas, con la regla de que las dependencias siempre apuntan hacia adentro:
+Clean Architecture en 4 capas; las dependencias solo apuntan hacia adentro y una prueba de arquitectura lo verifica en cada compilación:
 
 ```
 API  →  Infrastructure  →  Application  →  Domain
 ```
 
-- **Domain**: entidades, enums y reglas de negocio puras. No depende de ninguna otra capa.
-- **Application**: casos de uso (Commands/Queries vía MediatR), interfaces que Infrastructure implementa, DTOs y validaciones.
-- **Infrastructure**: implementación técnica — EF Core, autenticación, almacenamiento de archivos, envío de correos.
-- **API**: controllers, middlewares, configuración de arranque (`Program.cs`).
+- **Domain:** entidades, invariantes y reglas de negocio puras (`TesisGrado`, `Etapa`, `Decision`…).
+- **Application:** casos de uso (`ICommandHandler`/`IQueryHandler`), validadores, DTOs e interfaces.
+- **Infrastructure:** EF Core, repositorios, JWT, almacenamiento de archivos, correo, outbox.
+- **API:** endpoints, middleware y composición.
 
-Documentación ampliada de decisiones de arquitectura en [`docs/backend-architecture.md`](docs/backend-architecture.md).
+## Puesta en marcha
 
-## Requisitos previos
+### Opción A: todo en contenedores (recomendada)
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- Editor: Visual Studio 2026 (v18+) para targeting completo de .NET 10, Visual Studio Code con C# Dev Kit, o Visual Studio 2022 17.14+ (limitado a compilar, no a abrir proyectos net10.0 directamente en el IDE)
-- Motor de base de datos configurado (ver sección de ambientes)
-- Docker Desktop (opcional para desarrollo local, obligatorio para despliegue)
-- Herramienta EF Core CLI:
-  ```bash
-  dotnet tool install --global dotnet-ef
-  ```
-
-## Instalación y puesta en marcha
-
-1. Clonar el repositorio:
-   ```bash
-   git clone https://github.com/<tu-organizacion>/sgt-tesis-backend.git
-   cd sgt-tesis-backend
-   ```
-
-2. Restaurar dependencias:
-   ```bash
-   dotnet restore
-   ```
-
-3. Configurar la cadena de conexión en `src/SGT.Tesis.API/appsettings.Development.json` (ver [Configuración de ambientes](#configuración-de-ambientes)).
-
-4. Aplicar migraciones a la base de datos:
-   ```bash
-   dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-project src/SGT.Tesis.API
-   ```
-
-5. Confiar en el certificado HTTPS de desarrollo (una sola vez por máquina):
-   ```bash
-   dotnet dev-certs https --trust
-   ```
-
-6. Ejecutar el proyecto:
-   ```bash
-   dotnet run --project src/SGT.Tesis.API --launch-profile https
-   ```
-
-7. Verificar que responde en:
-   ```
-   https://localhost:7261/swagger
-   ```
-
-## Configuración de ambientes
-
-El proyecto maneja 3 ambientes con configuración separada:
-
-| Archivo | Ambiente | Notas |
-|---|---|---|
-| `appsettings.Development.json` | Local / desarrollo | Puede versionarse con datos ficticios |
-| `appsettings.Staging.json` | Pruebas / QA | Cadena de conexión vía variable de entorno |
-| `appsettings.Production.json` | Producción | **Nunca** debe contener secretos reales en el repo |
-
-**Los secretos de producción** (cadenas de conexión, claves JWT, credenciales de correo/almacenamiento) se gestionan mediante variables de entorno o un gestor de secretos (Azure Key Vault u equivalente institucional), nunca hardcodeados ni comiteados.
-
-Para desarrollo local, se recomienda usar `dotnet user-secrets` en vez de escribir credenciales directamente en `appsettings.Development.json`:
+Requiere Docker Desktop.
 
 ```bash
+cp .env.example .env        # complete los secretos (el .env no se versiona)
+docker compose up --build
+```
+
+Levanta SQL Server, crea la base y los usuarios de mínimo privilegio, aplica migraciones, arranca la API en http://localhost:8080 (Swagger en `/swagger`) y Mailpit en http://localhost:8025. El primer Administrador se crea con `ADMIN_CORREO` y `ADMIN_PASSWORD`.
+
+### Opción B: con el SDK de .NET
+
+Requiere el [SDK de .NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) y una instancia de SQL Server.
+
+```bash
+dotnet restore
 dotnet user-secrets init --project src/SGT.Tesis.API
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "tu-cadena-local" --project src/SGT.Tesis.API
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<cadena>" --project src/SGT.Tesis.API
+dotnet user-secrets set "Jwt:SigningKey" "<32 o más caracteres aleatorios>" --project src/SGT.Tesis.API
+dotnet user-secrets set "Jwt:Issuer" "sgt-tesis-api" --project src/SGT.Tesis.API
+dotnet user-secrets set "Jwt:Audience" "sgt-tesis-clientes" --project src/SGT.Tesis.API
+dotnet user-secrets set "Bootstrap:AdminCorreo" "admin@institucion.edu" --project src/SGT.Tesis.API
+dotnet user-secrets set "Bootstrap:AdminPassword" "<contraseña inicial>" --project src/SGT.Tesis.API
+dotnet ef database update --project src/SGT.Tesis.Infrastructure
+dotnet run --project src/SGT.Tesis.API
 ```
 
-## Estructura del proyecto
+Todas las variables, por ambiente, están en [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md). La API **no arranca** sin cadena de conexión, clave JWT y ruta de almacenamiento, y fuera de Development tampoco sin `AllowedHosts` y correo SMTP: es intencional.
+
+## Estructura del repositorio
 
 ```
-sgt-tesis-backend/
 ├── src/
-│   ├── SGT.Tesis.Domain/          # Entidades, enums, reglas de negocio
-│   ├── SGT.Tesis.Application/     # Casos de uso (CQRS con MediatR)
-│   ├── SGT.Tesis.Infrastructure/  # EF Core, JWT, almacenamiento, correo
-│   └── SGT.Tesis.API/             # Controllers y arranque de la aplicación
+│   ├── SGT.Tesis.Domain/          # Entidades y reglas de negocio
+│   ├── SGT.Tesis.Application/     # Casos de uso, validadores, interfaces
+│   ├── SGT.Tesis.Infrastructure/  # EF Core, repositorios, JWT, correo, archivos
+│   └── SGT.Tesis.API/             # Endpoints, middleware, arranque
 ├── tests/
-│   ├── SGT.Tesis.UnitTests/
-│   └── SGT.Tesis.IntegrationTests/
-├── docs/                          # Documentación técnica y de arquitectura
-└── docker-compose.yml
+│   ├── SGT.Tesis.UnitTests/           # Dominio y casos de uso
+│   ├── SGT.Tesis.IntegrationTests/    # API real (WebApplicationFactory + SQLite en memoria)
+│   ├── SGT.Tesis.ArchitectureTests/   # Reglas de dependencias entre capas
+│   └── load/                          # Pruebas de carga k6
+├── scripts/db/, scripts/load/     # Scripts SQL (usuarios, restricciones, datos de carga)
+├── docs/                          # Documentación técnica y de operación
+├── Dockerfile, docker-compose.yml # Imágenes y entorno local
+└── .github/                       # CI, publicación de imágenes, Dependabot
 ```
 
-Detalle completo de carpetas internas por proyecto en [`docs/backend-architecture.md`](docs/backend-architecture.md).
-
-## Roles del sistema
+## Roles y flujo de una tesis
 
 | Rol | Descripción |
 |---|---|
-| **Estudiante** | Registra su tesis, avanza por el flujo de 7 etapas, sube documentación y recibe retroalimentación consolidada. |
-| **Administrador** | Única autoridad que aprueba/rechaza el avance de cada etapa. Asigna evaluadores, ve el dashboard de KPIs y la cola de validación institucional. |
-| **Evaluador** | Emite su veredicto técnico solo sobre la(s) etapa(s) que le fueron asignadas. No tiene autoridad para mover el estado de la tesis. |
-
-## Flujo de tesis
+| **Estudiante** | Registra su tesis, sube documentos, envía cada etapa a revisión y ve la retroalimentación. |
+| **Evaluador** | Emite su veredicto técnico solo en las etapas que le asignaron; no puede cambiar estados. |
+| **Administrador** | Única autoridad que aprueba, observa o rechaza una etapa; gestiona usuarios, asigna evaluadores y ve auditoría y dashboard. |
 
 ```
-Estudiante → Propuesta → Consejo → Evaluación → Pasantía → Artículo → Requisitos Finales
+Estudiante → Propuesta → Consejo → Evaluación → Pasantía → Artículo → Requisitos finales
 ```
 
-Cada etapa tiene un estado propio (`Pendiente`, `EnRevision`, `Observado`, `Aprobado`, `Rechazado`). El avance de una etapa a la siguiente requiere siempre una decisión explícita del Administrador, registrada de forma inmutable para auditoría.
+Cada etapa pasa por `Pendiente → EnRevision → (Aprobado | Observado | Rechazado)`. Aprobar abre la siguiente; observar la devuelve al estudiante para corregir y reenviar; rechazar rechaza la tesis. Cada decisión se registra de forma inmutable.
 
-## Comandos útiles
+## Pruebas
 
 ```bash
-# Compilar toda la solución
-dotnet build
-
-# Ejecutar la API
-dotnet run --project src/SGT.Tesis.API
-
-# Crear una nueva migración
-dotnet ef migrations add NombreDeLaMigracion --project src/SGT.Tesis.Infrastructure --startup-project src/SGT.Tesis.API
-
-# Aplicar migraciones pendientes
-dotnet ef database update --project src/SGT.Tesis.Infrastructure --startup-project src/SGT.Tesis.API
-
-# Ejecutar todas las pruebas
-dotnet test
-
-# Levantar contenedores (API + base de datos) con Docker Compose
-docker-compose up -d
+dotnet test --solution SGT.Tesis.slnx                                                 # todas
+dotnet test --solution SGT.Tesis.slnx --coverage --coverage-output-format cobertura   # con cobertura
+dotnet format SGT.Tesis.slnx --verify-no-changes                                      # estilo
+dotnet list SGT.Tesis.slnx package --vulnerable --include-transitive                  # paquetes vulnerables
 ```
 
-## Testing
-
-- **Pruebas unitarias** (`SGT.Tesis.UnitTests`): reglas de negocio de Domain y lógica de casos de uso de Application, sin dependencias externas.
-- **Pruebas de integración** (`SGT.Tesis.IntegrationTests`): endpoints de la API contra una base de datos de prueba.
+Cada criterio de aceptación de la especificación tiene pruebas etiquetadas (`[Trait("AC", "11.4")]`). Las pruebas de API usan SQLite en memoria por defecto (rápidas) y el CI **también las ejecuta contra un SQL Server real** (job `pruebas-sql-server`): cada prueba crea y elimina su propia base de datos, y otra prueba aplica todas las migraciones en una base nueva y comprueba que el modelo no tenga cambios sin migrar. Para correrlas en local contra SQL Server (por ejemplo, el contenedor de `docker compose`):
 
 ```bash
-dotnet test --filter "FullyQualifiedName~UnitTests"
-dotnet test --filter "FullyQualifiedName~IntegrationTests"
+export SGT_TEST_SQLSERVER="Server=127.0.0.1,14330;User Id=sa;Password=<clave-sa>;TrustServerCertificate=True;Encrypt=True"
+dotnet test --project tests/SGT.Tesis.IntegrationTests
 ```
 
-## Convenciones de Git
+Use `127.0.0.1` y no `localhost` (en Windows `localhost` puede resolver a IPv6 y Docker solo publica IPv4). La cuenta debe poder crear bases de datos; no use un servidor con datos reales.
 
-- `main` — rama protegida, siempre desplegable. No se pushea directo.
-- `develop` — integración de features antes de pasar a producción.
-- `feature/<nombre-tarea>` — una rama por tarea del sprint (ej. `feature/auth-jwt`).
-- `hotfix/<nombre>` — correcciones urgentes sobre `main`.
+## Flujo de trabajo con Git
 
-Formato de commits sugerido (Conventional Commits):
-
-```
-feat: agrega endpoint de asignación de evaluadores
-fix: corrige validación de avance de etapa sin decisión previa
-chore: configura Directory.Build.props
-docs: actualiza README con pasos de instalación
-```
-
-Todo Pull Request hacia `develop` o `main` requiere al menos una revisión aprobada antes de mergear.
-
-## Roadmap / Sprints
-
-La planificación completa por sprints, con tareas y criterios de aceptación, está en [`docs/sprints.md`](docs/sprints.md).
-
-## Contribución
-
-1. Crea una rama desde `develop`: `git checkout -b feature/nombre-tarea`
-2. Realiza tus cambios y agrega pruebas si aplica.
-3. Verifica que `dotnet build` y `dotnet test` pasen sin errores.
-4. Abre un Pull Request hacia `develop` describiendo el cambio y referenciando el Issue correspondiente.
+- `main`: producción, protegida. `develop`: integración, base de las ramas de trabajo.
+- Ramas `feature/<n-issue>-<descripcion>`; commits en formato Conventional Commits.
+- Pull Requests hacia `develop` con una aprobación y CI en verde; *Squash and merge*.
+- Detalle en [`CONTRIBUTING.md`](CONTRIBUTING.md) y [`docs/git-workflow.pdf`](docs/git-workflow.pdf).

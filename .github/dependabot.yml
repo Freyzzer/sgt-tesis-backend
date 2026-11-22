@@ -1,0 +1,34 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    target-branch: develop
+    # ADR-003: versiones de licencia comercial; no se usan.
+    ignore:
+      - dependency-name: "MediatR*"
+      - dependency-name: "AutoMapper*"
+    groups:
+      microsoft:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+      pruebas:
+        patterns:
+          - "xunit*"
+          - "NetArchTest*"
+          - "coverlet*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: develop
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: develop
