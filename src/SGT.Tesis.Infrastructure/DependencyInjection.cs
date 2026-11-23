@@ -1,27 +1,108 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SGT.Tesis.Application.Auditoria;
+using SGT.Tesis.Application.Common.Abstractions;
+using SGT.Tesis.Application.Consultas;
+using SGT.Tesis.Application.Documentos;
+using SGT.Tesis.Application.Evaluacion;
+using SGT.Tesis.Application.GestionTesis;
+using SGT.Tesis.Application.Notificaciones;
+using SGT.Tesis.Application.Reportes;
+using SGT.Tesis.Infrastructure.Documentos;
+using SGT.Tesis.Infrastructure.Flujo;
+using SGT.Tesis.Infrastructure.Identity;
+using SGT.Tesis.Infrastructure.Notificaciones;
 using SGT.Tesis.Infrastructure.Persistence;
+using SGT.Tesis.Infrastructure.Persistence.Repositories;
+using SGT.Tesis.Infrastructure.Reportes;
 
 namespace SGT.Tesis.Infrastructure;
 
-/// <summary>
-/// Provides extension methods for registering infrastructure layer services in the dependency injection container.
-/// </summary>
 public static class DependencyInjection
 {
-    /// <summary>
-    /// Registers infrastructure dependencies, including the database context, with the service collection.
-    /// </summary>
-    /// <param name="services">The service collection to register dependencies into.</param>
-    /// <param name="configuration">The application configuration containing connection strings and setting definitions.</param>
-    /// <returns>The updated <see cref="IServiceCollection"/> instance for chaining.</returns>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<SistemaPosgradosDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(SistemaPosgradosDbContext).Assembly.FullName)));
+        services.AddSingleton<IValidateOptions<DatabaseOptions>, DatabaseOptionsValidator>();
+
+        services.AddOptions<DatabaseOptions>()
+            .Bind(configuration.GetSection(DatabaseOptions.SectionName))
+            .Configure(o => o.ConnectionString =
+                configuration.GetConnectionString(DatabaseOptions.ConnectionStringName) ?? string.Empty)
+            .ValidateOnStart();
+
+        services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateOnStart();
+
+        services.AddOptions<BootstrapOptions>().Bind(configuration.GetSection(BootstrapOptions.SectionName));
+
+        services.AddScoped<AuditoriaInterceptor>();
+        services.AddSingleton<InmutabilidadInterceptor>();
+
+        services.AddDbContext<AppDbContext>((provider, builder) =>
+        {
+            var db = provider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+
+            builder.UseSqlServer(db.ConnectionString, sql =>
+            {
+                sql.CommandTimeout(db.CommandTimeoutSeconds);
+                sql.EnableRetryOnFailure(
+                    db.MaxRetryCount,
+                    TimeSpan.FromSeconds(db.MaxRetryDelaySeconds),
+                    errorNumbersToAdd: null);
+            });
+            builder.AddInterceptors(
+                provider.GetRequiredService<AuditoriaInterceptor>(),
+                provider.GetRequiredService<InmutabilidadInterceptor>());
+        });
+
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IPasswordHasher, PasswordHasherService>();
+        services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+        services.AddSingleton<IValidateOptions<FrontendOptions>, FrontendOptionsValidator>();
+        services.AddOptions<FrontendOptions>().Bind(configuration.GetSection(FrontendOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IAppLinks, AppLinks>();
+        services.AddScoped<IAsignacionRepository, AsignacionRepository>();
+        services.AddScoped<IVeredictoRepository, VeredictoRepository>();
+        services.AddScoped<IDecisionRepository, DecisionRepository>();
+        services.AddScoped<IAuditTrail, AuditTrail>();
+        services.AddScoped<IReportesRepository, ReportesRepository>();
+        services.AddScoped<IConsultasRepository, ConsultasRepository>();
+        services.AddOptions<DashboardOptions>().Bind(configuration.GetSection(DashboardOptions.SectionName));
+        services.AddSingleton<IReportesPolicy, DashboardPolicy>();
+        services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+        services.AddScoped<ITesisRepository, TesisRepository>();
+        services.AddSingleton<IValidateOptions<DocumentosOptions>, DocumentosOptionsValidator>();
+        services.AddOptions<DocumentosOptions>().Bind(configuration.GetSection(DocumentosOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<FlujoOptions>, FlujoOptionsValidator>();
+        services.AddOptions<FlujoOptions>().Bind(configuration.GetSection(FlujoOptions.SectionName)).ValidateOnStart();
+        services.AddSingleton<IPoliticasDeEtapa, PoliticasDeEtapaConfigurables>();
+        services.AddSingleton<IValidateOptions<StorageOptions>, StorageOptionsValidator>();
+        services.AddOptions<StorageOptions>().Bind(configuration.GetSection(StorageOptions.SectionName)).ValidateOnStart();
+
+        services.AddSingleton<IDocumentosPolicy, DocumentosPolicy>();
+        services.AddSingleton<IFileStorage, LocalFileStorage>();
+        services.AddScoped<IDocumentoRepository, DocumentoRepository>();
+        services.AddScoped<IRequisitosDocumentales, RequisitosDocumentalesConfigurables>();
+
+        services.AddSingleton<IValidateOptions<EmailOptions>, EmailOptionsValidator>();
+        services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName)).ValidateOnStart();
+        services.AddScoped<INotificador, Notificador>();
+        services.AddScoped<IEmailSender>(provider =>
+            string.Equals(provider.GetRequiredService<IOptions<EmailOptions>>().Value.Modo, "Smtp", StringComparison.OrdinalIgnoreCase)
+                ? ActivatorUtilities.CreateInstance<SmtpEmailSender>(provider)
+                : ActivatorUtilities.CreateInstance<LogEmailSender>(provider));
+        services.AddScoped<OutboxProcessor>();
+        services.AddHostedService<OutboxEmailWorker>();
+
+        services.AddHostedService<AdminBootstrapService>();
 
         return services;
     }

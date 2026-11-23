@@ -1,35 +1,30 @@
 namespace SGT.Tesis.Domain.Common;
 
 /// <summary>
-/// Generic base class for domain entities with a strongly typed identifier.
+/// Base de toda entidad persistida: identificador GUID no secuencial
+/// (evita la enumeración de recursos) y campos de auditoría.
 /// </summary>
-/// <typeparam name="TKey">The type of the primary key (e.g., int, Guid).</typeparam>
-public abstract class BaseEntity<TKey>
+public abstract class BaseEntity
 {
-    /// <summary>
-    /// Gets or sets the entity unique identifier.
-    /// </summary>
-    public TKey Id { get; set; } = default!;
+    public Guid Id { get; protected set; } = Guid.CreateVersion7();
 
-    /// <summary>
-    /// Gets or sets the date and time when the entity was created.
-    /// </summary>
-    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; private set; }
 
-    /// <summary>
-    /// Gets or sets the date and time when the entity was last modified, if applicable.
-    /// </summary>
-    public DateTime? FechaModificacion { get; set; }
+    public Guid? CreatedBy { get; private set; }
 
-    /// <summary>
-    /// Gets or sets a value indicating whether the entity is active.
-    /// </summary>
-    public bool EsActivo { get; set; } = true;
-}
+    public DateTime? UpdatedAt { get; private set; }
 
-/// <summary>
-/// Default base class for domain entities using <see cref="int"/> as the primary key type.
-/// </summary>
-public abstract class BaseEntity : BaseEntity<int>
-{
+    public Guid? UpdatedBy { get; private set; }
+
+    public void MarkCreated(DateTime utcNow, Guid? userId)
+    {
+        CreatedAt = utcNow;
+        CreatedBy = userId;
+    }
+
+    public void MarkUpdated(DateTime utcNow, Guid? userId)
+    {
+        UpdatedAt = utcNow;
+        UpdatedBy = userId;
+    }
 }

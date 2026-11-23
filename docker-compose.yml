@@ -1,0 +1,116 @@
+# Entorno LOCAL de desarrollo: SQL Server + migraciones + API + servidor de correo de pruebas.
+# No es una configuración de producción (ver docs/OPERATIONS.md).
+#
+#   cp .env.example .env     # y complete los secretos
+#   docker compose up --build
+#
+# API: http://localhost:8080 (Swagger en /swagger) · Correos de prueba: http://localhost:8025
+
+name: sgt-tesis
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Defina MSSQL_SA_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-14330}:1433"
+    volumes:
+      - sgt-db:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # Crea la base de datos y los dos usuarios de mínimo privilegio (aplicación y migraciones).
+  db-init:
+    build:
+      context: .
+      target: dbtools
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ADMIN_PASSWORD: ${MSSQL_SA_PASSWORD}
+      APP_PASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env}
+      MIGRATOR_PASSWORD: ${MIGRATOR_DB_PASSWORD:?Defina MIGRATOR_DB_PASSWORD en .env}
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-SGTTesis_Dev}
+      APP_LOGIN: sgt_app_dev
+      MIGRATOR_LOGIN: sgt_migrator_dev
+      TRUST_SERVER_CERT: "true"
+    command: ["preparar"]
+    restart: "no"
+
+  migrator:
+    build:
+      context: .
+      target: migrator
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    command:
+      - "--connection"
+      - "Server=db;Database=${DB_NAME:-SGTTesis_Dev};User Id=sgt_migrator_dev;Password=${MIGRATOR_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=30"
+    restart: "no"
+
+  # Tras las migraciones: restringe UPDATE/DELETE sobre las tablas inmutables (decisiones y auditoría).
+  db-harden:
+    build:
+      context: .
+      target: dbtools
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      ADMIN_PASSWORD: ${MSSQL_SA_PASSWORD}
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-SGTTesis_Dev}
+      APP_LOGIN: sgt_app_dev
+      MIGRATOR_LOGIN: sgt_migrator_dev
+      TRUST_SERVER_CERT: "true"
+    command: ["finalizar"]
+    restart: "no"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"
+
+  api:
+    build:
+      context: .
+      target: runtime
+    depends_on:
+      db-harden:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=db;Database=${DB_NAME:-SGTTesis_Dev};User Id=sgt_app_dev;Password=${APP_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;Connect Timeout=15"
+      Jwt__Issuer: sgt-tesis-api
+      Jwt__Audience: sgt-tesis-clientes
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Defina JWT_SIGNING_KEY en .env (32 caracteres o más)}
+      Bootstrap__AdminCorreo: ${ADMIN_CORREO:-admin@institucion.edu}
+      Bootstrap__AdminPassword: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD en .env}
+      Email__Modo: Smtp
+      Email__Host: mailpit
+      Email__Port: "1025"
+      Email__UseStartTls: "false"
+      Email__FromAddress: no-responder@sgt-tesis.local
+      Email__IntervaloSegundos: "5"
+      Cors__AllowedOrigins__0: http://localhost:4200
+      RateLimit__LoginPermitPerMinute: ${LOGIN_PERMIT_PER_MINUTE:-10}
+      Dashboard__KpisCacheSegundos: ${KPIS_CACHE_SEGUNDOS:-30}
+    volumes:
+      - sgt-documentos:/data/documentos
+
+volumes:
+  sgt-db:
+  sgt-documentos:
